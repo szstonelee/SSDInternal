@@ -86,8 +86,8 @@ NOTE: fsync == 0 or == 1的比较
 
 然后，我们测试不用的场景，包括：
 1. blocksize，bs=4K, 16K, 128K, 1M 
-2. numjobs，多少个file，测试包括1个， 4个, 总大小都是4G 
-3. rw，包括randread， randrw(r/w=3:1)， read（sequential), write(sequential)
+2. numjobs，多少个file，测试包括1个， 4个, 总大小都是4G。可以理解为多少个thread并发 
+3. rw，包括randread， randwrite，randrw(r/w=3:1)， read（sequential), write(sequential)
 
 ### Random read
 ```
@@ -151,8 +151,13 @@ fio --name=test --rw=write --bs=4K --direct=1 --numjobs=4 --size=1G --runtime=12
 
 ## 分析
 
-1. block size越大，带宽也越大
-2. 在bs不太大（128KB）前，带宽和Block Size基本是线性的
+1. block size越大，带宽Throughtput也越大
+2. 但增大不是线性增加的，增幅在递减。而当block size过大时，反而降低，这个和dd的结果是一致的
 3. 在不用到buffer情况下，基本很难达到10K IOPS
-4. 用buffer情况下，有几十几百K的IOPS（不在报表里），不过，那应该算是幻象，即这么高的IOPS，实际是内存高速的原因导致
-5. 
+4. 用buffer情况下，有几十几百K的IOPS（不在报表里），不过，那应该算是幻象，实际是内存高速带宽的原因
+5. 随着block size变大(同时也对应着Throughput)，iops再减少
+6. iops几K是常态，超过10k很难。大block size下，低于1K
+7. 和dd的数据对比，同样的block size下，Throughput要高，这应该是不是每次io都要sync的结果
+8. Sequential同样block size下，所对应的Throughput要高，这也是合理的。这说明SSD有和HDD类似的特性，只是没有HDD千倍那么夸张。SSD也就2-3倍
+9. 并发情况下，Throughput稍微高点，但不明显，可以忽略
+10。有两个没有搞清楚的地方，其一，write的throughput会略高于read，这个很奇怪，因为按理write会导致SSD内部的gc起效，从而降低throughput；其二是某些参数下的throughput会特别不符合规律，比如128K下那个sequetial read。
