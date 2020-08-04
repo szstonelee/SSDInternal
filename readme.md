@@ -160,4 +160,4 @@ fio --name=test --rw=write --bs=4K --direct=1 --numjobs=4 --size=1G --runtime=12
 7. 和dd的数据对比，同样的block size下，Throughput要高，这应该是不是每次io都要sync的结果
 8. Sequential同样block size下，所对应的Throughput要高，这也是合理的。这说明SSD有和HDD类似的特性，只是没有HDD千倍那么夸张。SSD也就2-3倍
 9. 并发情况下，Throughput稍微高点，但不明显，可以忽略
-10。有两个没有搞清楚的地方，其一，write的throughput会略高于read，这个很奇怪，因为按理write会导致SSD内部的gc起效，从而降低throughput；其二是某些参数下的throughput会特别不符合规律，比如128K下那个sequetial read。
+10. 有两个没有搞清楚的地方，其一，write的throughput会略高于read，这个很奇怪，因为按理write会导致SSD内部的gc起效，从而降低throughput；其二是某些参数下的throughput会特别不符合规律，比如128K下那个sequetial read。
