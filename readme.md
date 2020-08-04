@@ -22,7 +22,7 @@
 但我的实践发现不是如此。
 
 关键是：
-1. Throughput没有那么高，和HDD比起来，一般情况下差不多。
+1. Throughput没有那么高，在一些场景下，和HDD比起来，优势不大
 2. IOPS确实比HDD高很多，但视乎情况depends
 
 # dd tool in Linux，一个简单的磁盘工具
@@ -31,7 +31,7 @@
 
 [参考网上dd这个说明](https://linuxaria.com/pills/how-to-properly-use-dd-on-linux-to-benchmark-the-write-speed-of-your-disk)
 
-我们使用oflag=sync这个参数，因为这样每个block，都会data sync到文件，同时sync到file meta(比如：更新文件最新的更新时间等)，这个会比较真实的反应SSD的情况。否则，缺省下，没有sync，就会出现：
+我们使用oflag=sync这个参数，因为这样每个block，都会data sync到文件，同时sync到file meta(比如：更新文件最新时间等)。否则，缺省下，没有sync，就会出现：
 1. 磁盘写，其实是内存写，测试的throughput，其实是内存的带宽(主存Main Memory1秒跑1G肯定没有问题，上限是10G)
 2. conv=fsync，这个是一次性sync，比如：count=1000，发出了1000次写，先到内存，然后一次性flush到磁盘，也不真实
 
@@ -40,7 +40,7 @@
 ## 测试结果
 
 我的机器上的结果(NVMe, 120G, Ubuntu 18.04 VM in MacOS)
-| Block Size | Throughput | Command |
+| Block Size | Throughput(Bandwidth) | Command |
 |:----------:|:----------:|--------:|
 | 1K | 1.3 MB/s | dd bs=1K count=100000 if=/dev/zero of=test oflag=sync |
 | 4K | 5.2 MB/s | dd bs=4K count=50000 if=/dev/zero of=test oflag=sync |
@@ -55,8 +55,9 @@
 ## 分析
 
 1. Block Size比较小时，Throughput比较小，只有几兆，是最大带宽值的百分之一不到
-2. 随着Block Size增加，Throughtput也增加，到Block Size==512K前，接近线性 
-3. 并不是BlockSize越大，Thourghput就越大，比如Block Size==4M下，比2M要小
+2. 随着Block Size增加，Throughtput也增加，到Block Size==128K前，接近线性
+3. 128K开始，有增加，但增幅减少
+4. 并不是BlockSize越大，Thourghput就越大，比如Block Size==4M下，比2M要小
 
 因此，对于基本都是小值的key/value，比如Redis下OLTP应用，存储数据库的查询所产生的实际数据吞吐量，很可能是个很小的值（几兆MB/s）。
 
@@ -78,17 +79,15 @@
 
 --direct=1，这样，OS的buffer就不起作用
 
---fsync=0，如果为1，每个block都flush再做下一个。但那样和实际运行不一致，
+--fsync=0，如果为1，每个block都flush再做下一个。但那样和实际运行不一致，就如上面的数据库flush策略范例
 
-NOTE: fsync == 0 or == 1的比较
+NOTE: fsync == 0 or == 1的比较 
 尝试和1做过比较，差别不是太大，稍微有提高。只有sequential write(且bs=4k)时，有5或6倍的巨大差别，怀疑是seqential write时，driver或SSD做了写合并。即bs小时合并才有效，大了就不太容易合并，但奇怪的是sequential read没有什么影响。
 
 然后，我们测试不用的场景，包括：
-blocksize，bs=4K, 16K, 128K, 1M
-numjobs，多少个file，测试包括1个， 4个, 总大小都是4G
+blocksize，bs=4K, 16K, 128K, 1M 
+numjobs，多少个file，测试包括1个， 4个, 总大小都是4G 
 rw，包括randread， randrw(r/w=3:1)， read（sequential), write(sequential)
-
-e.g.
 
 ### Random read
 ```
