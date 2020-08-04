@@ -85,9 +85,9 @@ NOTE: fsync == 0 or == 1的比较
 尝试和1做过比较，差别不是太大，稍微有提高。只有sequential write(且bs=4k)时，有5或6倍的巨大差别，怀疑是seqential write时，driver或SSD做了写合并。即bs小时合并才有效，大了就不太容易合并，但奇怪的是sequential read没有什么影响。
 
 然后，我们测试不用的场景，包括：
-blocksize，bs=4K, 16K, 128K, 1M 
-numjobs，多少个file，测试包括1个， 4个, 总大小都是4G 
-rw，包括randread， randrw(r/w=3:1)， read（sequential), write(sequential)
+1. blocksize，bs=4K, 16K, 128K, 1M 
+2. numjobs，多少个file，测试包括1个， 4个, 总大小都是4G 
+3. rw，包括randread， randrw(r/w=3:1)， read（sequential), write(sequential)
 
 ### Random read
 ```
