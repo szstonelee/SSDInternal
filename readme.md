@@ -124,50 +124,50 @@ fio --name=test --rw=write --bs=4K --direct=1 --numjobs=4 --size=1G --runtime=12
 | bs=4K |	numjobs=1 |randread         | 2855 | 11.7MB/s |	
 |       |           |randwrite        |      |          | 3109 | 12.7MB/s |	
 |	      |	          |randrw(3:1)      |	1949 | 7986kB/s |  652 | 2673kB/s |  
-|		    |           |read sequential  |	4429 | 18.1MB/s	|      |          | 
-|		    |           |write sequential	|	     |          | 7266 | 29.8MB/s | 
+|		    |           |read sequent     |	4429 | 18.1MB/s	|      |          | 
+|		    |           |write sequent   	|	     |          | 7266 | 29.8MB/s | 
 |       |	numjobs=4	|randread	        | 3941 | 16.1MB/s	|      
 |       |           |randwrite        |      |          | 4341 | 17.8MB/s | 
 |       |		        |randrw(3:1)	    | 2957 | 12.1MB/s	| 991	 | 4060kB/s |
-|		    |           |read sequential	| 3734 | 15.3MB/s	|	
-|		    |           |write sequential |	     |          | 12.2k| 49.0MB/s |
+|		    |           |read sequent   	| 3734 | 15.3MB/s	|	
+|		    |           |write sequent    |	     |          | 12.2k| 49.0MB/s |
 |bs=16K	| numjobs=1	|randread         |	2490 | 40.8MB/s	|	
 |       |           |randwrite        |      |          | 3754 | 61.5MB/s |
 |		    |           |randrw(3:1)      |	1782 | 29.2MB/s	| 595  | 9758kB/s |
-|		    |           |read sequential	| 4442 | 72.8MB/s	|	
-|       |           |write sequential	|	     |          | 6236 | 102MB/s  |
+|		    |           |read sequent   	| 4442 | 72.8MB/s	|	
+|       |           |write sequent  	|	     |          | 6236 | 102MB/s  |
 |       | numjobs=4	|randread         |	2885 | 47.3MB/s |		
 |       |           |randwrite        |      |          | 4832 | 79.2MB/s |     
 |	      |           |randrw(3:1)	    | 2692 | 44.1MB/s	| 902	 | 14.8MB/s |
-|       |       		|read sequential	| 3045 | 49.9MB/s |		
-|		    |           |write sequential	|		   |          | 9806 | 161MB/s  |
+|       |       		|read sequent   	| 3045 | 49.9MB/s |		
+|		    |           |write sequent    |		   |          | 9806 | 161MB/s  |
 |bs=128K|	numjobs=1	|randread	        | 1622 | 213MB/s  |
 |       |           |randwrite        |      |    		  | 1730 | 227MB/s  |
 |		    |           |randrw(3:1)	    | 3297 | 432MB/s	| 1097 | 144MB/s  |
-|		    |           |read sequential	| 5419 | 710MB/s  |		
-|		    |           |write sequential	|      |          | 1860 | 244MB/s  |
+|		    |           |read sequent   	| 5419 | 710MB/s  |		
+|		    |           |write sequent  	|      |          | 1860 | 244MB/s  |
 |	      | nunjobs=4	|randread         |	1786 | 234MB/s  |	
 |       |           |randwrite        |      |          |	2008 | 263MB/s  |
 |		    |           |randrw(3:1)	    | 1270 | 167MB/s  | 437  | 57.3MB/s |
-|		    |           |read sequential	| 2289 | 300MB/s	|	
-|		    |           |write sequential	|      |          | 2618 | 343MB/s  |
+|		    |           |read sequent   	| 2289 | 300MB/s	|	
+|		    |           |write sequent  	|      |          | 2618 | 343MB/s  |
 |bs=1M	| numjobs=1	|randread	        | 234	 | 246MB/s 	|	
 |       |           |randwrite        |      |          | 239  | 251MB/s  | 
 |		    |           |randrw(3:1)	    | 438  | 460MB/s  | 151 | 158MB/s   |
-|		    |           |read sequential	| 645	 | 677MB/s  |		
-|		    |           |write sequential	|	     |          | 262	| 275MB/s   |
+|		    |           |read sequent   	| 645	 | 677MB/s  |		
+|		    |           |write sequent  	|	     |          | 262	| 275MB/s   |
 |	      | numjobs=4 |randread	        | 538	 | 564MB/s	|	
 |       |           |randwrite        |      |          | 231 | 243MB/s   | 
 |		    |           |randrw(3:1)      | 234	 | 246MB/s  | 83  |	87.5MB/s  |
-|		    |           |read sequential	| 488	 | 512MB/s  |		
-|		    |           |write sequential	|      |          |	921 | 966MB/s   |
+|		    |           |read sequent   	| 488	 | 512MB/s  |		
+|		    |           |write sequent  	|      |          |	921 | 966MB/s   |
 
 
 ## 和Rocksdb针对SSD测试的对比
 
-[RocksDB对于SSD也有个测试]（https://github.com/facebook/rocksdb/wiki/Performance-Benchmarks#fio-test-results）
+[RocksDB对于SSD也有个测试](https://github.com/facebook/rocksdb/wiki/Performance-Benchmarks#fio-test-results)
 
-从它的结果看，在direct=1下，bs=4K，randread，BW(bandwith)500MB/s上下， iops也到了100K以上
+从它的结果看，在direct=1下，bs=4K，randread，BW(bandwidth)500MB/s上下， iops也到了100K以上
 
 但我用类似的fio命令测试（对于第一个fio，我只能做8个job，用8G空间，但这个不应该是决定性因素，第二个fio命令是一样的），发现Throughput还是10MB/s多一点，iops还是不到3k。和我自己上面的测试报告类似。
 
@@ -176,7 +176,7 @@ fio --name=test --rw=write --bs=4K --direct=1 --numjobs=4 --size=1G --runtime=12
 1. 操作系统，我的是Linux VM in MacOS
 2. 我的SSD太烂
 
-但我没有更多的机器和其他的SSD进行类比测试，所以，这对于我是个很大的疑惑（我相信Facebook的测试决定是真实的，但我上面的数据也是实测的）
+但我没有更多的机器和其他的SSD进行类比测试，所以，这对于我是个很大的疑惑（我相信Facebook的测试是真实的，但我上面的数据也是实测的）
 
 ## 分析
 
@@ -202,3 +202,5 @@ fio --name=test --rw=write --bs=4K --direct=1 --numjobs=4 --size=1G --runtime=12
  其一，write的throughput会略高于read，这个很奇怪，因为按理write会导致SSD内部的gc起效，从而降低throughput；[可以参考这篇文章](https://www.enterprisestorageforum.com/storage-hardware/ssd-vs-hdd-speed.html)
 
  其二，是某些参数下的throughput会特别不符合规律，比如128K下那个sequetial read。
+
+ 其三，某些参数对比，会突然恶化。比如：bs=128K，sequential read时，jobs=1 vs jobs=4，throughput没有增加，反而降了一半还多。这视乎也预兆着，某些特定条件下的SSD，性能会出乎逻辑，这将给我们未来做分析带来麻烦。 
