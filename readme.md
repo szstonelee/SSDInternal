@@ -1,5 +1,5 @@
 
-# 小心假数据
+# SSD性能是个迷
 
 我曾经做过一个项目，使用SSD做内存的辅助，提升一个Cache系统的性价比。我浏览网上一些讯息，看上去，SSD的性能是十分惊人的。比如Throughput，一个普通的NVMe的SSD，动不动就几千兆Byte/s，少则也有500MB/s。而IOPS，也是几百k/s的级别。
 
@@ -31,7 +31,7 @@
 但我的实践发现不是如此。[这也就是我为什么在RedRock项目里有感而发。](https://github.com/szstonelee/redrock/blob/master/documents/performance_en.md)
 
 关键是：
-1. SSD Throughput没有那么高，在一些场景下，和HDD比起来，优势不大
+1. SSD Throughput没有一些宣传上说的那么高，在一些场景下，和HDD比起来，优势不大
 2. SSD IOPS确实比HDD高很多，但视乎情况depends
 
 所以，我们需要了解SSD的特性，即在各种环境下的Throughput和IOPS的数据。
@@ -162,22 +162,6 @@ fio --name=test --rw=write --bs=4K --direct=1 --numjobs=4 --size=1G --runtime=12
 |		    |           |read sequent   	| 488	 | 512MB/s  |		
 |		    |           |write sequent  	|      |          |	921 | 966MB/s   |
 
-
-## 和Rocksdb针对SSD测试的对比
-
-[RocksDB对于SSD也有个测试](https://github.com/facebook/rocksdb/wiki/Performance-Benchmarks#fio-test-results)
-
-从它的结果看，在direct=1下，bs=4K，randread，BW(bandwidth)500MB/s上下， iops也到了100K以上
-
-但我用类似的fio命令测试（对于第一个fio，我只能做8个job，用8G空间，但这个不应该是决定性因素，第二个fio命令是一样的），发现Throughput还是10MB/s多一点，iops还是不到3k。和我自己上面的测试报告类似。
-
-可能有几个东西影响：
-
-1. 操作系统，我的是Linux VM in MacOS
-2. 我的SSD太烂
-
-但我没有更多的机器和其他的SSD进行类比测试，所以，这对于我是个很大的疑惑（我相信Facebook的测试是真实的，但我上面的数据也是实测的）
-
 ## 分析
 
 1. 一般而言block size越大，带宽Throughtput也越大，和dd结果一致
@@ -204,3 +188,31 @@ fio --name=test --rw=write --bs=4K --direct=1 --numjobs=4 --size=1G --runtime=12
  其二，是某些参数下的throughput会特别不符合规律，比如128K下那个sequetial read。
 
  其三，某些参数对比，会突然恶化。比如：bs=128K，sequential read时，jobs=1 vs jobs=4，throughput没有增加，反而降了一半还多。这视乎也预兆着，某些特定条件下的SSD，性能会出乎逻辑，这将给我们未来做分析带来麻烦。 
+
+# 对比和注意事项
+
+[RocksDB对于SSD也有个测试](https://github.com/facebook/rocksdb/wiki/Performance-Benchmarks#fio-test-results)
+
+从它的结果看，在direct=1下，bs=4K，randread，BW(bandwidth)500MB/s上下， iops也到了100K以上
+
+但我用类似的fio命令测试（对于第一个fio，我只能做8个job，用8G空间，但这个不应该是决定性因素，第二个fio命令是一样的），发现Throughput还是10MB/s多一点，iops还是不到3k。和我自己上面的测试报告类似。
+
+可能有几个东西影响：
+
+1. 操作系统，我的是Linux VM in MacOS
+2. 我的SSD太烂。在[Wiki](https://en.wikipedia.org/wiki/Solid-state_drive)里有写Enterprise flash drivers应该和笔记本上的SSD有性能差别，比如企业级的Toshiba PX02SS，在Random write 4K时，最高的iops就42k，Random read 4K时，130K。这个和我笔记本电脑上的SSD，有几十倍的差别。
+
+在wiki里提及3D XPoint SSD，random时比NAND SSD要高得多（10倍以上量级），但sequential时要低。这个也是需要特别注意的地方。
+
+如果可以，最好针对不同的SSD进行专门的测试。包括：
+1. Enterprise SSD vs Notebook SSD
+2. 3D XPoint vs NAND
+3. read vs write
+4. random vs sequential
+5. different block size
+
+ 另外，还有一个非常需要注意的地方，就是测试时间。因为SSD内部有gc，所以，时间一长，如果写多，那么gc将会不停产生。类似Java里gc的影响，会导致测试数据和开始几十分钟的不一样，[比如这个文章揭示可能有超过10倍的降低。](https://www.seagate.com/tech-insights/lies-damn-lies-and-ssd-benchmark-master-ti/)
+
+ 同时，这面这个文章还提到，不同的read/write比，导致iops也大有不同。有时会有近10倍的差别。甚至数据的熵值（entropy）也会有近10倍的差别。
+
+ 为什么entropy会有影响？在[wiki](https://en.wikipedia.org/wiki/Solid-state_drive#Controller)可以看出，实际上，一个NAND存储芯片并不快，SSD快的秘诀是将数据并发存储到多个NAND芯片上，这需要SSD内部的controller根据某些算法来做数据的分片（可以类比数据库的shard算法），但如果数据的形态不能形成一个好的并发存储，可能导致性能的降低。
