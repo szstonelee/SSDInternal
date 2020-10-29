@@ -180,3 +180,20 @@ NOTE: 上面的测试，每次值都有一定抖动，偏差可达30%。
 
 ## read multi thread vs io depth
 
+对这篇文章https://www.usenix.org/system/files/conference/fast16/fast16-papers-lu.pdf，里面的东西有所怀疑
+
+1. sequential和random差距这么大(但多线程后，throughput有趋同)
+2. sequential在block size从小到大时，throughput几乎无变化，非常奇怪
+2. 多线程的因素，到底是多线程，还是io任务队列足够多（需要做单线程多io任务， 和多线程的比较）
+
+当前还不能测试，因为发现自己机器的Linux下的io submitted queue length & io completed queue length，在1-2之间
+怀疑可能是：
+1. Multipass虚拟机导致，即driver并没有使用到NVMe的接口（否则queue length应该可以上去）
+2. 还有几十自己的Mac OS的SSD的性能确实差，实际的length（注意：不是libaio下的iodepth）
+
+```
+libao下多任务（怀疑libaio其实也是多线程）
+fio --name=test --filename=testfile --size=400M --rw=randread --ioengine=libaio --direct=1 --bs=4k --iodepth=1
+多线程
+fio --name=test --filename=testfile --size=400M --rw=randread --ioengine=sync --direct=1 --bs=4k --numjobs=4 --thread --group_reporting=1
+```

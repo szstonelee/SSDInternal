@@ -90,7 +90,7 @@ SSD性能初探 By dd and fio
 
 ## fio说明
 
-[参考网上资料](https://wiki.mikejung.biz/Benchmarking#Fio_Test_Options_and_Examples)
+[参考网上资料](https://fio.readthedocs.io/en/latest/index.html)
 
 我们的设置：
 
@@ -221,3 +221,13 @@ fio --name=test --rw=write --bs=4K --direct=1 --numjobs=4 --size=1G --runtime=12
  同时，这面这个文章还提到，不同的read/write比，导致iops也大有不同。有时会有近10倍的差别。甚至数据的熵值（entropy）也会有近10倍的差别。
 
  为什么entropy会有影响？在[wiki](https://en.wikipedia.org/wiki/Solid-state_drive#Controller)可以看出，实际上，一个NAND存储芯片并不快，SSD快的秘诀是将数据并发存储到多个NAND芯片上，这需要SSD内部的controller根据某些算法来做数据的分片（可以类比数据库的shard算法），但如果数据的形态不能形成一个好的并发存储，可能导致性能的降低。
+
+ # Mac OS下的Fio
+Mac OS下也可以运行fio，但有些功能不支持，例如libaio，有些数据看上去很奇怪，例如direct=1下，throughput很高，好像用到了page cache。
+
+同时，官方fio并没有支持Mac OS。所以，下面只作为一个备注，实际中还是不考虑Mac OS下的fio数据
+
+```
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
+brew install fio
+```
