@@ -1,0 +1,168 @@
+
+# 测试环境
+
+在Mac上的虚拟Linux(基于MultiPass)
+
+## Linux版本
+
+```
+cat /proc/version
+cat /etc/*-release
+```
+
+输出结果是
+```
+Linux version 5.4.0-48-generic
+DISTRIB_ID=Ubuntu
+DISTRIB_RELEASE=20.04
+```
+
+## OS IO
+
+### IO Scheduler
+
+检查OS IO Scheduler
+```
+cat /sys/block/<your block device name>/queue/scheduler
+```
+
+输出是
+```
+none [mq-deadline]
+```
+
+我们需要将之改为none模式的IO Scheduler。因为是虚拟机，所以没有用比较适合SSD的none模式
+```
+sudo -i
+echo none > /sys/block/<your block device name>/queue/scheduler
+cat /sys/block/<your block device name>/queue/scheduler
+```
+
+### rotational
+
+确定Linux操作系统不是按旋转磁盘（rotationional）模式对待磁盘
+```
+cat /sys/block/<your block device name>/queue/rotational
+```
+
+结果是1。这不对，需要修改为0
+```
+sudo -i
+echo 0 > /sys/block/<your block device name>/queue/rotational
+cat /sys/block/<your block device name>/queue/rotational
+```
+
+### read ahead
+
+```
+blockdev --getra /dev/<your block device name>
+```
+
+我们的结果是256，即kernel可以自己根据需要预读128K。为了测试的方便，我们将它设置为0
+
+```
+blockdev --setra 0 /dev/<your block device name>
+blockdev --getra /dev/<your block device name>
+```
+
+## File System
+
+```
+df -Th
+```
+
+结果是
+```
+Filesystem         Type        Size  Used Avail Use% Mounted on
+/dev/vda1          ext4        9.6G  6.7G  2.9G  71% /
+```
+
+## 创建一个测试文件
+
+根基我的磁盘的容量，设置一个2G大小的文件
+```
+dd if=/dev/zero of=testfile bs=1M count=2048
+```
+
+但这个文件有一个问题，就是内容都是0，这不利于测试真实的情况，因为SSD是根据文件内容的熵，散列到内部的cell里进行并发处理。
+
+所以，用真实的数据文件，或者下载一个大小相当的文件包（最好是压缩的文件，比较接近真实的情况）
+
+我是下载了一个Ubuntu 20的Desktop安装版本，有近3G大小。
+
+## read & direct & invalidate
+
+对于read，如果direct=1，那么page cache将不启作用。如果direct=0，但invalidate=1，那么page cache的作用是零
+
+## 清page cache
+
+```
+sudo -i
+sync; echo 1 > /proc/sys/vm/drop_caches
+```
+
+## 查看page cache
+
+```
+cat /proc/meminfo
+```
+
+然后看```Cached:```这一项，如果只有很少的数量，比如几十M，那么就说明page cache已经清楚干净了
+
+## page cache的热身
+
+```
+fio --name=test --filename=testfile --rw=read --size=2048M --ioengine=sync --bs=4k --direct=0
+```
+
+然后用上面的查看page cache的命令查看，可以看到```Cached:```到了几个G，说明文件已经被缓存到page cache里了
+
+## read, direct, invalidate的对比
+
+如果read不经过page cache，i.e., direct=1，
+
+```
+fio --name=test --filename=testfile --rw=randread --size=200M --ioengine=sync --bs=4k --direct=1
+```
+在我的机器上，throughtput=15MB/s
+
+如果设置direct=0，经过page cache，你会发现结果差不多
+```
+fio --name=test --filename=testfile --rw=randread --size=200M --ioengine=sync --bs=4k --direct=0
+```
+这是因为还有一个参数invalidate，这个参数是每次读前，将对应的cache先清除，所以，就和direct=1一样了
+如果我们增加设置invaliddate，如下
+```
+fio --name=test --filename=testfile --rw=randread --size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0
+```
+就会发现throughput=2GB/s左右。这是因为基本都是从内存读到数据（我们之前有做热身）
+如果将随机读改为顺序读（同时不启用page cache），命令如下
+```
+fio --name=test --filename=testfile --rw=read --size=200M --ioengine=sync --bs=4k --direct=1
+```
+这时throughput=17MB/s，说明顺序读和随机读的性能差别不大。
+
+但是，如果我们尝试将bs改为其他值，包括8k, 16k, 32k，然后比较随机读rw=randread和顺序读rw=read，我们会发现，同一bs下，througput差不多
+
+| read by random or sequential | block size | throughput | fio |
+| :--------------------------: | :--------: | :--------: | --- |
+| random | 4KB | 15MB/s | fio --name=test --filename=testfile --rw=randread --size=200M --ioengine=sync --bs=4k --direct=1 |
+| sequential | 4KB | 17MB/s | fio --name=test --filename=testfile --rw=read --size=200M --ioengine=sync --bs=4k --direct=1 |
+| random | 8KB | 34MB/s | fio --name=test --filename=testfile --rw=randread --size=400M --ioengine=sync --bs=8k --direct=1 |
+| sequential | 8KB | 37MB/s | fio --name=test --filename=testfile --rw=read --size=400M --ioengine=sync --bs=8k --direct=1 |
+| random | 16KB | 62MB/s | fio --name=test --filename=testfile --rw=randread --size=800M --ioengine=sync --bs=16k --direct=1 |
+| sequential | 16KB | 69MB/s | fio --name=test --filename=testfile --rw=read --size=800M --ioengine=sync --bs=16k --direct=1 |
+| random | 32KB | 84MB/s | fio --name=test --filename=testfile --rw=randread --size=1600M --ioengine=sync --bs=32k --direct=1 |
+| sequential | 32KB | 128MB/s | fio --name=test --filename=testfile --rw=read --size=1600M --ioengine=sync --bs=32k --direct=1 |
+| random | 64KB | 129MB/s | fio --name=test --filename=testfile --rw=randread --size=2000M --ioengine=sync --bs=32k --direct=1 |
+| sequential | 64KB | 228MB/s | fio --name=test --filename=testfile --rw=read --size=2000M --ioengine=sync --bs=32k --direct=1 |
+
+NOTE: 上面的测试，每次值都有一定抖动，偏差可达30%。
+
+但基本结论还是可以做出来的
+
+1. SSD下，顺序读和随机读差别不大，基本一个数量级，即使算上偏差，也到不了1倍的量级。
+2. block size越大，则throughput越大，前期基本接近线性，即block size大一倍，throughput也接近一倍。
+3. SSD的性能表现不是很稳定，每次测试值都有偏差。当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
+
+
