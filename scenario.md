@@ -180,7 +180,7 @@ NOTE: 上面的测试，每次值都有一定抖动，偏差可达30%。
 
 ## read multi thread vs io depth
 
-对这篇文章https://www.usenix.org/system/files/conference/fast16/fast16-papers-lu.pdf，里面的东西有所怀疑
+[对这篇文章](https://www.usenix.org/system/files/conference/fast16/fast16-papers-lu.pdf)，里面的东西有所怀疑
 
 1. sequential和random差距这么大(但多线程后，throughput有趋同)
 2. sequential在block size从小到大时，throughput几乎无变化，非常奇怪
