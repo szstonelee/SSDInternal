@@ -4,9 +4,9 @@ SSD性能初探 By dd and fio
 
 我曾经做过一个项目，使用SSD做内存的辅助，提升一个Cache系统的性价比。我浏览网上一些讯息，看上去，SSD的性能是十分惊人的。比如Throughput，一个普通的NVMe的SSD，动不动就几千兆Byte/s，少则也有500MB/s。而IOPS，也是几百k/s的级别。
 
-而HDD，如果不考虑RAID，单纯一个磁盘，它的Throughput就是百MB/s，更糟糕的是IOPS，每秒只有百来个。HDD读写有一个很大的特性，就是一个随机random读写，相对于顺序sequential读写，差别是一个天文数字。比如：[最新的数据](https://colin-scott.github.io/personal_website/research/interactive_latency.html)，sequential读1MB，不到1ms，而随机读一次，需要2ms。假设一个随机读是1KB的话，那么一个Sequential读写，相当于2000个random读写。
+而HDD，如果不考虑RAID，单纯一个磁盘，它的Throughput就是百MB/s，更糟糕的是IOPS，每秒只有百来个。HDD读写有一个很大的特性，就是一个随机random读写，相对于顺序sequential读写，差别是一个天文数字。比如：[最新的数据](https://colin-scott.github.io/personal_website/research/interactive_latency.html)，sequential读1MB，不到1ms，而随机读一次，需要2ms。假设一个随机读是1KB的话(NOTE: 实际page至少4KB，但假设其中有效或查询数据为1KB)，那么一个Sequential读写，相当于2000个random读写。
 
-再看HDD IOPS的制约，假设一个随机读写只有16KB（MySQL的一个页面的缺省大小），那么实际的吞吐量就不到2MB/s，是理论最大带宽的2%左右。
+再看HDD IOPS的制约，假设一个随机读写只有16KB（MySQL的一个页面的缺省大小），那么实际的吞吐量就不到2MB/s，是理论最大带宽bandwith的2%左右。
 
 这也是为什么，在数据库设计里，大量使用日志LOG，因为log就是sequential读写。
 
@@ -16,16 +16,20 @@ SSD性能初探 By dd and fio
 
 内存暂被修改但未刷到磁盘的page，我们称之为dirty page，会越来越多，一是内存可能容不下这么多的dirty page，二是如果dirty page过多，万一发生crash后，重启时重写的页面会非常多，如果这个时间太大（比如小时级），也是实际业务不可接受的。所以，在某些时间点上，i.e. checkpoint，我们必须需将这些dirty page部分或全部刷新(flush)到磁盘上。你可能发现，这还是随机写，好像并没有节省磁盘读写。但实际上，有很多优化：
 1. 实际数据库请求不可能是滔滔不绝的，在请求不忙的时刻，可以做checkpoint；
-2. 如果一个页面在checkpoint之间，被修改多次，那么只要一次写盘就够了，是一个合并写；
+2. 如果一个页面在checkpoint之间，被修改多次，那么只要一次写盘就够了，是一个合并写merge；
 3. 更奇妙的，如果几个被修改的页面连续或接近，我们可以将多次random写，变成一次sequential写。
 
-即使log这个顺序写，也可以利用HDD磁盘特性。因为log虽然是堆积append only和顺序sequential，但毕竟每秒都产生1MB的log机会是不多的。所以log也可以先写到OS的缓存，然后每秒flush一次，这样，几次小的事务log会形成一个大的磁盘写。
+所以checkpoint的实质，是让磁盘对应的page，现在内存对应page里修改，延迟写。以让当时的请求能很快返回来降低latency，并获得上面3个好处。不过这是有代价的，代价就是WAL(MySQL的redo log)，为了避免crash导致的数据丢失，先用顺序写盘的方式去写WAL。因为WAL可能是随机磁盘读写的千倍性能，同时没有写放大。即WAL只写修改对应的内容，比如一个记录修改了100字节，那么WAL只需要记录这100字节即可，但如果更新内存页面到对应的磁盘页面，如果是MySQL，一个页面16KB，将产生160倍的写放大。
+
+即使log这个顺序写，也可以利用HDD磁盘特性。因为log虽然是堆积append only和顺序sequential，但毕竟每秒都产生1MB的log机会是不多的。所以log也可以先写到OS的缓存buffer，然后每秒flush一次，相当于一个batch操作。这样，几次小的事务log会形成一个大的磁盘写。
 
 这也是很多数据库，都提供一个配置选项，可以设置每个事务必须一次flush(sync/per transaction)，还是每秒定期一个flush(sync/per second)。我在《MySQL技术内幕》这本书上看到，有人测试过，这个每秒 flush log 选项，相比可以带来10倍的性能提升。但这又是一个tradeoff，因为本来我们用redo log，就是防止数据丢失。但如果设置了每秒flsh log一次，我们就有丢失1秒数据的风险。
 
 但实际生产(production)环境下，因为有这个10倍的好处，对于很多WEB应用，都是建议用每秒刷新log的。除非到了金融级别，才真正考虑每次交易都刷盘flush的策略。
 
 所以，这也是我们在设计数据库的一个考量：可以丢失一部分数据，只要概率比较低，同时万一丢失，损失量可控（比如：1秒）。
+
+还有一个可以借鉴的思想，就是batch里面的WAL log，没有落盘（flush），就不算commit。但这个比较复杂，需要延迟答复客户端，同时其他对应的页面修改也必须滞后。
 
 再回到SSD，如果SSD的IOPS和Throughput，相对于HDD，有这么巨大的提升，那我们的数据库性能，不是可以什么都不做的情况下，最少十倍，甚至千倍的提升？
 
@@ -53,8 +57,8 @@ SSD性能初探 By dd and fio
 
 我的机器上的结果(NVMe, 120G, Ubuntu 18.04 VM in MacOS)
 
-| Block Size | Throughput(Bandwidth) | Command |
-|:----------:|:----------:|--------:|
+| Block Size | Throughput | Command |
+|:----------:|:----------:|:--------|
 | 1K | 1.3 MB/s | dd bs=1K count=100000 if=/dev/zero of=test oflag=sync |
 | 4K | 5.2 MB/s | dd bs=4K count=50000 if=/dev/zero of=test oflag=sync |
 | 16K | 20.1 MB/s | dd bs=16K count=10000 if=/dev/zero of=test oflag=sync |
