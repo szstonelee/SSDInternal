@@ -1,4 +1,4 @@
-SSD性能初探 By DD and Fio
+SSD性能初探 By dd and fio
 
 # SSD性能是个迷
 

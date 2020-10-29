@@ -131,6 +131,7 @@ fio --name=test --filename=testfile --rw=randread --size=200M --ioengine=sync --
 fio --name=test --filename=testfile --rw=randread --size=200M --ioengine=sync --bs=4k --direct=0
 ```
 这是因为还有一个参数invalidate，这个参数是每次读前，将对应的cache先清除，所以，就和direct=1一样了
+
 如果我们增加设置invaliddate，如下
 ```
 fio --name=test --filename=testfile --rw=randread --size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0
@@ -142,9 +143,9 @@ fio --name=test --filename=testfile --rw=read --size=200M --ioengine=sync --bs=4
 ```
 这时throughput=17MB/s，说明顺序读和随机读的性能差别不大。
 
-但是，如果我们尝试将bs改为其他值，包括8k, 16k, 32k，然后比较随机读rw=randread和顺序读rw=read，我们会发现，同一bs下，througput差不多
+如果我们尝试将bs改为其他值，包括8k, 16k, 32k，64k，然后比较随机读和顺序读，我们得到下表
 
-| read by random or sequential | block size | throughput | fio |
+| mode | block size | throughput | fio |
 | :--------------------------: | :--------: | :--------: | --- |
 | random | 4KB | 15MB/s | fio --name=test --filename=testfile --rw=randread --size=200M --ioengine=sync --bs=4k --direct=1 |
 | sequential | 4KB | 17MB/s | fio --name=test --filename=testfile --rw=read --size=200M --ioengine=sync --bs=4k --direct=1 |
@@ -161,7 +162,7 @@ NOTE: 上面的测试，每次值都有一定抖动，偏差可达30%。
 
 但基本结论还是可以做出来的
 
-1. SSD下，顺序读和随机读差别不大，基本一个数量级，即使算上偏差，也到不了1倍的量级。
+1. SSD下，同一block size，顺序读和随机读差别不大，基本一个数量级，即使算上偏差，也到不了1倍的量级。
 2. block size越大，则throughput越大，前期基本接近线性，即block size大一倍，throughput也接近一倍。
 3. SSD的性能表现不是很稳定，每次测试值都有偏差。当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
 
