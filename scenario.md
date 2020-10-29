@@ -56,6 +56,10 @@ cat /sys/block/<your block device name>/queue/rotational
 
 ```
 blockdev --getra /dev/<your block device name>
+
+or
+
+cat /sys/block/<your block device name>/queue/read_ahead_kb
 ```
 
 我们的结果是256，即kernel可以自己根据需要预读128K。为了测试的方便，我们将它设置为0
@@ -63,6 +67,11 @@ blockdev --getra /dev/<your block device name>
 ```
 blockdev --setra 0 /dev/<your block device name>
 blockdev --getra /dev/<your block device name>
+
+or
+
+echo 0 > /sys/block/<your block device name>/queue/read_ahead_kb
+cat /sys/block/<your block device name>/queue/read_ahead_kb
 ```
 
 ## File System
@@ -143,9 +152,11 @@ fio --name=test --filename=testfile --rw=read --size=200M --ioengine=sync --bs=4
 ```
 这时throughput=17MB/s，说明顺序读和随机读的性能差别不大。
 
+## read各种block size下的对比
+
 如果我们尝试将bs改为其他值，包括8k, 16k, 32k，64k，然后比较随机读和顺序读，我们得到下表
 
-| mode | block size | throughput | fio |
+| mode | block size | throughput | fio command |
 | :--------------------------: | :--------: | :--------: | --- |
 | random | 4KB | 15MB/s | fio --name=test --filename=testfile --rw=randread --size=200M --ioengine=sync --bs=4k --direct=1 |
 | sequential | 4KB | 17MB/s | fio --name=test --filename=testfile --rw=read --size=200M --ioengine=sync --bs=4k --direct=1 |
@@ -166,4 +177,6 @@ NOTE: 上面的测试，每次值都有一定抖动，偏差可达30%。
 2. block size越大，则throughput越大，前期基本接近线性，即block size大一倍，throughput也接近一倍。
 3. SSD的性能表现不是很稳定，每次测试值都有偏差。当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
 
+
+## read multi thread vs io depth
 
