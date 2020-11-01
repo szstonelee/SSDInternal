@@ -156,27 +156,36 @@ fio --name=test --filename=testfile --rw=read --size=200M --ioengine=sync --bs=4
 
 如果我们尝试将bs改为其他值，包括8k, 16k, 32k，64k，然后比较随机读和顺序读，我们得到下表
 
+NOTE: 
+1. 我们的测试时间需要足够长，至少10秒以上，否则，请修改size和io_size参数 (size表示从文件里多少字节，io_size表示总共多少字节)
+2. 面的测试，每次值都有一定抖动，偏差可达20%，我们连续测试5次，取出现概率较多的值
+
 | mode | block size | throughput | fio command |
 | :--------------------------: | :--------: | :--------: | --- |
-| random | 4KB | 15MB/s | fio --name=test --filename=testfile --rw=randread --size=200M --ioengine=sync --bs=4k --direct=1 |
-| sequential | 4KB | 17MB/s | fio --name=test --filename=testfile --rw=read --size=200M --ioengine=sync --bs=4k --direct=1 |
-| random | 8KB | 34MB/s | fio --name=test --filename=testfile --rw=randread --size=400M --ioengine=sync --bs=8k --direct=1 |
-| sequential | 8KB | 37MB/s | fio --name=test --filename=testfile --rw=read --size=400M --ioengine=sync --bs=8k --direct=1 |
-| random | 16KB | 62MB/s | fio --name=test --filename=testfile --rw=randread --size=800M --ioengine=sync --bs=16k --direct=1 |
-| sequential | 16KB | 69MB/s | fio --name=test --filename=testfile --rw=read --size=800M --ioengine=sync --bs=16k --direct=1 |
-| random | 32KB | 84MB/s | fio --name=test --filename=testfile --rw=randread --size=1600M --ioengine=sync --bs=32k --direct=1 |
-| sequential | 32KB | 128MB/s | fio --name=test --filename=testfile --rw=read --size=1600M --ioengine=sync --bs=32k --direct=1 |
-| random | 64KB | 129MB/s | fio --name=test --filename=testfile --rw=randread --size=2000M --ioengine=sync --bs=32k --direct=1 |
-| sequential | 64KB | 228MB/s | fio --name=test --filename=testfile --rw=read --size=2000M --ioengine=sync --bs=32k --direct=1 |
+| random | 4KB | 21MB/s | fio --name=test --filename=testfile --rw=randread --size=400M --ioengine=sync --bs=4k --direct=1 |
+| sequential | 4KB | 25MB/s | fio --name=test --filename=testfile --rw=read --size=400M --ioengine=sync --bs=4k --direct=1 |
+| random | 8KB | 43MB/s | fio --name=test --filename=testfile --rw=randread --size=600M --ioengine=sync --bs=8k --direct=1 |
+| sequential | 8KB | 50MB/s | fio --name=test --filename=testfile --rw=read --size=600M --io_size=1000M --ioengine=sync --bs=8k --direct=1 |
+| random | 16KB | 74MB/s | fio --name=test --filename=testfile --rw=randread --size=1000M --ioengine=sync --bs=16k --direct=1 |
+| sequential | 16KB | 98MB/s | fio --name=test --filename=testfile --rw=read --size=1000M --io_size=1500M --ioengine=sync --bs=16k --direct=1 |
+| random | 32KB | 161MB/s | fio --name=test --filename=testfile --rw=randread --size=1000M --io_size=2500M --ioengine=sync --bs=32k --direct=1 |
+| sequential | 32KB | 191MB/s | fio --name=test --filename=testfile --rw=read --size=1000M --io_size=3000M --ioengine=sync --bs=32k --direct=1 |
+| random | 64KB | 290MB/s | fio --name=test --filename=testfile --rw=randread --size=1000M --io_size=5000M --ioengine=sync --bs=64k --direct=1 |
+| sequential | 64KB | 343MB/s | fio --name=test --filename=testfile --rw=read --size=1000M --io_size=6000M --ioengine=sync --bs=64k --direct=1 |
+| random | 128KB | 472MB/s | fio --name=test --filename=testfile --rw=randread --size=1000M --io_size=8000M --ioengine=sync --bs=128k --direct=1 |
+| sequential | 128KB | 553MB/s | fio --name=test --filename=testfile --rw=read --size=1000M --io_size=10000M --ioengine=sync --bs=128k --direct=1 |
+| random | 256KB | 632MB/s | fio --name=test --filename=testfile --rw=randread --size=1000M --io_size=12000M --ioengine=sync --bs=256k --direct=1 |
+| sequential | 256KB | 677MB/s | fio --name=test --filename=testfile --rw=read --size=1000M --io_size=12000M --ioengine=sync --bs=256k --direct=1 |
+| random | 512KB | 534MB/s | fio --name=test --filename=testfile --rw=randread --size=1000M --io_size=12000M --ioengine=sync --bs=512k --direct=1 |
+| sequential | 512KB | 543MB/s | fio --name=test --filename=testfile --rw=read --size=1000M --io_size=12000M --ioengine=sync --bs=512k --direct=1 |
+| random | 1024KB | 587MB/s | fio --name=test --filename=testfile --rw=randread --size=1000M --io_size=12000M --ioengine=sync --bs=1024k --direct=1 |
+| sequential | 1024KB | 602MB/s | fio --name=test --filename=testfile --rw=read --size=1000M --io_size=12000M --ioengine=sync --bs=1024k --direct=1 |
 
-NOTE: 上面的测试，每次值都有一定抖动，偏差可达30%。
+基本结论还是可以做出来的
 
-但基本结论还是可以做出来的
-
-1. SSD下，同一block size，顺序读和随机读差别不大，基本一个数量级，即使算上偏差，也到不了1倍的量级。
-2. block size越大，则throughput越大，前期基本接近线性，即block size大一倍，throughput也接近一倍。
-3. SSD的性能表现不是很稳定，每次测试值都有偏差。当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
-
+1. SSD下，同一block size，对于throughput，顺序读和随机读差别不大，基本一个数量级，顺序读略高，即使算上偏差，也到不了1倍的量级。
+2. block size越大，则throughput越大，前期基本接近线性，即block size大一倍，throughput也接近一倍。到了128K后，基本就持平，而且256K左右是最高峰。
+3. SSD的性能表现不是很稳定，每次测试值都有偏差，会到20%左右。当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
 
 ## read multi thread vs io depth
 

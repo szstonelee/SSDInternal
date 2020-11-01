@@ -23,7 +23,10 @@ SSD性能初探 By dd and fio
 
 即使log这个顺序写，也可以利用HDD磁盘特性。因为log虽然是堆积append only和顺序sequential，但毕竟每秒都产生1MB的log机会是不多的。所以log也可以先写到OS的缓存buffer，然后每秒flush一次，相当于一个batch操作。这样，几次小的事务log会形成一个大的磁盘写。
 
-这也是很多数据库，都提供一个配置选项，可以设置每个事务必须一次flush(sync/per transaction)，还是每秒定期一个flush(sync/per second)。我在《MySQL技术内幕》这本书上看到，有人测试过，这个每秒 flush log 选项，相比可以带来10倍的性能提升。但这又是一个tradeoff，因为本来我们用redo log，就是防止数据丢失。但如果设置了每秒flsh log一次，我们就有丢失1秒数据的风险。
+这也是很多数据库，都提供一个配置选项，可以设置每个事务必须一次flush(sync/per transaction)，还是每秒定期一个flush(sync/per second)。我看到两个案例：
+1. 《MySQL技术内幕》这本书上看到，有人测试过，这个每秒 flush log 选项，相比可以带来10倍的性能提升。
+2. Small Datum里的一片文章[《Redo logs in MongoDB and InnoDB》](http://smalldatum.blogspot.com/2014/03/redo-logs-in-mongodb-and-innodb.html).
+但这又是一个tradeoff，因为本来我们用redo log，就是防止数据丢失。但如果设置了每秒flush log一次，我们就有丢失1秒数据的风险。
 
 但实际生产(production)环境下，因为有这个10倍的好处，对于很多WEB应用，都是建议用每秒刷新log的。除非到了金融级别，才真正考虑每次交易都刷盘flush的策略。
 
@@ -36,8 +39,9 @@ SSD性能初探 By dd and fio
 但我的实践发现不是如此。[这也就是我为什么在RedRock项目里有感而发。](https://github.com/szstonelee/redrock/blob/master/documents/performance_en.md)
 
 关键是：
-1. SSD Throughput没有一些宣传上说的那么高，在一些场景下，和HDD比起来，优势不大
-2. SSD IOPS确实比HDD高很多，但视乎情况. it depends
+1. SSD Throughput没有一些宣传上说的那么高，在一些场景下，block size比较大的顺序读，和HDD比起来，优势不大
+2. SSD IOPS确实比HDD高很多，但视乎情况. it depends。在block size比较小的情况下，SSD的IOPS优势比较大
+3. SSD的GC是个潜在的麻烦。所有有GC的系统，如Java，都有类似的麻烦。
 
 所以，我们需要了解SSD的特性，即在各种环境下的Throughput和IOPS的数据。
 
