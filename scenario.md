@@ -105,14 +105,14 @@ dd if=/dev/zero of=testfile bs=1M count=2048
 
 对于read，如果direct=1，那么page cache将不启作用。如果direct=0，但invalidate=1，那么page cache的作用是零
 
-## 清page cache
+### 清page cache
 
 ```
 sudo -i
 sync; echo 1 > /proc/sys/vm/drop_caches
 ```
 
-## 查看page cache
+### 查看page cache
 
 ```
 cat /proc/meminfo | grep Cached
@@ -120,7 +120,7 @@ cat /proc/meminfo | grep Cached
 
 然后看```Cached:```这一项，如果只有很少的数量，比如几十M，那么就说明page cache已经清楚干净了
 
-## page cache的热身
+### page cache的热身
 
 ```
 fio --name=test --filename=testfile --rw=read --ioengine=sync --bs=4k --direct=0
@@ -128,7 +128,7 @@ fio --name=test --filename=testfile --rw=read --ioengine=sync --bs=4k --direct=0
 
 然后用上面的查看page cache的命令查看，可以看到```Cached:```到了几个G，说明文件已经被缓存到page cache里了
 
-## read, direct, invalidate的对比
+### read, direct, invalidate的对比
 
 如果read不经过page cache，i.e., direct=1，
 
@@ -154,7 +154,9 @@ fio --name=test --filename=testfile --rw=read --io_size=200M --ioengine=sync --b
 ```
 这时throughput=17MB/s，说明顺序读是随机读一倍。
 
-## read各种block size下的对比
+# read各种block size下的对比
+
+## 测试注意
 
 如果我们尝试将bs改为其他值，包括8k, 16k, 32k，64k，然后比较随机读和顺序读，我们得到下表
 
@@ -166,9 +168,10 @@ NOTE:
 ```
 for i in {1..5}; do <command>; done
 ```
+## 测试结果
 
-| mode | block size | throughput | fio command |
-| :--------------------------: | :--------: | :--------: | --- |
+| mode | bs | throughput | fio command |
+| :--- | :--------: | :--------: | --- |
 | random | 4KB | 9MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=4k --io_size=300M --rw=randread |
 | sequential | 4KB | 17MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=4k --io_size=300M --rw=read |
 | random | 8KB | 17MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=8k --io_size=600M --rw=randread |
@@ -188,6 +191,8 @@ for i in {1..5}; do <command>; done
 | random | 1024KB | 385MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=1024k --io_size=19200M --rw=randread |
 | sequential | 1024KB | 587MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=1024k --io_size=19200M --rw=read |
 
+## 分析
+
 基本结论还是可以做出来的
 
 1. SSD下，同一block size，对于throughput，顺序读比随机读有优势。在block size小时（64K），是一倍。当block size比较大，也是顺序读要好些。
@@ -195,7 +200,7 @@ for i in {1..5}; do <command>; done
 3. SSD的性能表现不是很稳定，每次测试值都有偏差，会到20%左右。当block size接近1M时，这个不稳定非常明显，甚至会有1倍的差别。
 4. 当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
 
-## read multi thread vs io depth
+# read multi thread vs io depth
 
 [对这篇文章Figure3](https://www.usenix.org/system/files/conference/fast16/fast16-papers-lu.pdf)，里面的东西有所怀疑
 
