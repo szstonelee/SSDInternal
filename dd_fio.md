@@ -194,6 +194,8 @@ fio --name=test --rw=write --bs=4K --direct=1 --numjobs=4 --size=1G --runtime=12
 
  其一，write的throughput会略高于read，这个很奇怪，因为按理write会导致SSD内部的gc起效，从而降低throughput；[可以参考这篇文章](https://www.enterprisestorageforum.com/storage-hardware/ssd-vs-hdd-speed.html)
 
+ 我在另外一个Paper里发现了类似的数据，在block size比较小时，企业级和用户级SSD里，会偶尔发生write的throughput高于read的现象。请参考：SNIA - SSD Performance – A Primer。但这个paper也不讳言，一般情况下，read的performance会好于write。特别是，什么时候触发SSD内部的gc，都不明确。
+
  其二，是某些参数下的throughput会特别不符合规律，比如128K下那个sequetial read。
 
  其三，某些参数对比，会突然恶化。比如：bs=128K，sequential read时，jobs=1 vs jobs=4，throughput没有增加，反而降了一半还多。这视乎也预兆着，某些特定条件下的SSD，性能会出乎逻辑，这将给我们未来做分析带来麻烦。 

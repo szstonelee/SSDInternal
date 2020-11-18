@@ -196,9 +196,10 @@ for i in {1..5}; do <command>; done
 基本结论还是可以做出来的
 
 1. SSD下，同一block size，对于throughput，顺序读比随机读有优势。在block size小时（64K），是一倍。当block size比较大，也是顺序读要好些。
-2. block size越大，则throughput越大，block size小时（64K），block size大一倍，throughput也接近一倍。当block size比较大时，也会提高，但不是线性。
-3. SSD的性能表现不是很稳定，每次测试值都有偏差，会到20%左右。当block size接近1M时，这个不稳定非常明显，甚至会有1倍的差别。
-4. 当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
+2. block size越大，则throughput越大，block size小时（64K），block size大一倍，throughput也接近一倍。当block size比较大时，也会提高，但不是线性。大block size时，其throughput可以达到小的几十倍。
+3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，是稳定的，而且比较高。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。同时，小block size下，IOPS都是几K。
+4. SSD的性能表现不是很稳定，每次测试值都有偏差，会到20%左右。当block size接近1M时，这个不稳定非常明显，甚至会有1倍的差别。
+5. 当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
 
 # read multi thread vs io depth
 
