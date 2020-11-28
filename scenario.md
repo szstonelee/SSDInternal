@@ -201,6 +201,113 @@ for i in {1..5}; do <command>; done
 4. SSD的性能表现不是很稳定，每次测试值都有偏差，会到20%左右。当block size接近1M时，这个不稳定非常明显，甚至会有1倍的差别。
 5. 当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
 
+# write log pattern
+
+## 命令
+
+因为是Log，所以，我们可以确定是sequential，--rw=write，同时，我们只考虑经过os page cache，i.e., --direct=1
+
+同时，既要用到page cache，同时又不能只有page cache，所以，--size有时需要远远超过os cache
+
+在我的Mac上，cat /proc/meminfo | grep Cached，发现page cache是2G左右
+
+范例
+```
+fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=0 --bs=4k
+```
+NOTE: 
+1. --end_fsync=1，最后文件写完，给一个fsync。
+2. 如果direct=1，那么fsync的值不一定有效
+
+我们主要测试，不同--bs下，fsync是0（不发出）,1或其他值的情况
+
+## 数据
+
+| bs | fsync | Throughputh |
+| :-: | :-: | :-: |
+| 4k | 0 | 196M/s |
+| 4k | 1 | 6M/s |
+| 4k | 2 | 18M/s |
+| 4k | 4 | 34M/s |
+| 4k | 8 | 57M/s |
+| 8k | 0 | 232M/s |
+| 8k | 1 | 9M/s |
+| 8k | 2 | 31M/s |
+| 8k | 4 | 60M/s |
+| 8k | 8 | 110M/s |
+| 16k | 0 | 228M/s |
+| 16k | 1 | 28M/s |
+| 16k | 2 | 54M/s |
+| 16k | 4 | 107M/s |
+| 16k | 8 | 155M/s |
+| 32k | 0 | 249M/s |
+| 32k | 1 | 73M/s |
+| 32k | 2 | 110M/s |
+| 32k | 4 | 133M/s |
+| 64k | 0 | 212M/s |
+| 64k | 1 | 111M/s |
+| 64k | 2 | 182M/s |
+| 128k | 0 | 225M/s |
+| 128k | 1 | 171M/s |
+| 256k | 0 | 224M/s |
+| 256k | 1 | 164M/s |
+| 512k | 0 | 248M/s |
+| 512k | 1 | 211M/s |
+| 1024k | 0 | 270M/s |
+| 1024k | 1 | 239M/s |
+
+## 总结
+
+1. 当fysnc=0时，bs从4k到1024k,Throughput都差别不大，都是200M以上。这意味写盘都先到page cache里，然后由os来write back。一般而言，都是接近磁盘的写的最大带宽。
+2. 当fsync=1时，是最慢的写盘操作。每一个bs写盘，都要flush & sync到SSD后才能继续。这相当于数据库系统里的每次写盘都sync的配置。是数据最安全的，但也是最慢的。其中，在4k，8k, 16k时，相比最大速度的写盘，有10倍以上的差别。很多数据库的页的大小，或者最小写盘单位，就是这三个单位。
+3. 当fsync=1时，当bs比较大，比如512k, 1024k时，其写盘速度和最大带宽差别不大，因为当bs比较大时，SSD的并发优势将会被利用到。
+4. 当bs比较小时，如4k，比较fsync的值从1到8，发现其对应的throughput也几乎是倍数增加。这也意味当小的写操作时，batch操作将会很好地利用到带宽。这也是很多数据库写盘操作里推崇batch的原因。
+
+# Write of page cache with random 4k read
+
+我们测试下面这种情况：首先write是log模式，同时全部走page cache，这样write log是最大效率。同时，另外一个进程（或线程）同时并发bs=4k的random read。然后看互相的影响。
+
+在没有写的影响，纯粹的随机读，参考上面的测试数据，throughput是10M/s左右，i.e.，IOPS是20K以上。
+
+在没有读的影响下，纯粹的顺序走page cache写，参考上面的测试数据，throughput是200-300M/s
+
+然后，我们尝试下面的命令
+先启动随机读， bs=4k, 不走cache(direct=1)
+```
+for i in `seq 1 10`; do fio --name=r --filename=readfile --ioengine=sync --rw=randread --io_size=50M --bs=4k --direct=1; done
+```
+紧跟着马上几乎同时启动顺序写，bs=1024k，走page cache, i.e., direct=0 & fsync=0
+```
+for i in `seq 1 30`; do fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=0 --bs=1024k; done
+```
+
+我们发现，对于顺序走page cache的写，其throughput变化不太大。有时还在200-300M之间，有时就在100-200M之间。而且200-300M的概率要高于100-200M。最大值到了297M/s，最低到了130M/s。所以，估计也就最多20%的损失。
+
+但对于随机读，并发时影响很大，大部分都在0.5M/s以下，最低时仅有0.2M/s。有接近50倍的差别。
+
+# Write of page cache with random 1024k read
+
+这个是模拟log写，和background做compaction时的随机大block size读的情况
+
+先启动写
+```
+for i in `seq 1 30`; do fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=0 --bs=1024k; done
+```
+然后几乎同时启动随机block size=1024k的读
+```
+for i in `seq 1 10`; do fio --name=r --filename=readfile --ioengine=sync --rw=randread --io_size=900M --bs=1024k --direct=1; done
+```
+
+我们发现，对于写，没有太大影响， 比上面的block size=4k影响还要小。
+
+对于读，如果纯粹读，从上面的数据看，throughput可以到400M/s或500M/s这个量级。但在这个测试中的并发中，发现基本throughput都降低到20M/s左右，有20多倍的降低。
+
+所以，通过两个测试，可以知道，对于经过page cache的log写（block size=1024k），其throughput没有太大影响。影响大的是读（我们只考虑随机读，这也是生产环境的真实现象），不管是block size = 4k，还是block size = 1024k，和纯粹的比，都有大幅的降低，20多倍，或者40多倍。
+
+不过，好在，读我们是很容易做load balance的，所以写不受太大影响，是好事。
+
+真正对于写的优化是：log写有两个，一个是注入ingest写，一个是background compaction的写。如何分配并发，同时如何降低write amplification，才是写优化的两个关键。
+
 # read multi thread vs io depth
 
 [对这篇文章Figure3](https://www.usenix.org/system/files/conference/fast16/fast16-papers-lu.pdf)，里面的东西有所怀疑
