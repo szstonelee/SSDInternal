@@ -162,9 +162,10 @@ fio --name=test --filename=testfile --rw=read --io_size=200M --ioengine=sync --b
 
 NOTE: 
 1. 测试文件大些，如果测试文件过小，或者用了比较小的size值，会导致throughput明显过高（可达1倍）
-2. 我们的测试时间需要足够长，至少10秒以上，否则，请修改io_size参数
-3. 每次值都有一定抖动，有偏差，我们连续测试5次，取出现概率较多的值
+2. 我们的测试时间需要足够长，至少5分钟以上，否则，请修改io_size参数。如果时间过短，SSD内部的缓存可能起很大作用，带宽有2倍的差别。
+3. 建议多测几次，取中间值或概率较多的值。即使每次几分钟，每次的值都有不同，最低和最高有50%的差别。
 
+如果想多测试几次，可以用下面的shell命令
 ```
 for i in {1..5}; do <command>; done
 ```
@@ -172,20 +173,20 @@ for i in {1..5}; do <command>; done
 
 | mode | bs | throughput | fio command |
 | :--- | :--------: | :--------: | --- |
-| random | 4KB | 9MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=4k --io_size=300M --rw=randread |
-| sequential | 4KB | 17MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=4k --io_size=300M --rw=read |
-| random | 8KB | 17MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=8k --io_size=600M --rw=randread |
-| sequential | 8KB | 36MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=8k --io_size=600M --rw=read |
-| random | 16KB | 31MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=16k --io_size=1200M --rw=randread |
-| sequential | 16KB | 65MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=16k --io_size=1200M --rw=read |
-| random | 32KB | 78MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=32k --io_size=2400M --rw=randread |
-| sequential | 32KB | 126MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=32k --io_size=2400M --rw=read |
-| random | 64KB | 155MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=64k --io_size=4800M --rw=randread |
-| sequential | 64KB | 247MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=64k --io_size=4800M --rw=read |
-| random | 128KB | 212MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=128k --io_size=9600M --rw=randread |
-| sequential | 128KB | 350MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=128k --io_size=9600M --rw=read |
-| random | 256KB | 249MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=256k --io_size=19200M --rw=randread |
-| sequential | 256KB | 402MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=256k --io_size=19200M --rw=read |
+| random | 4KB | 8MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=4k --io_size=5G --rw=randread |
+| sequential | 4KB | 18MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=4k --io_size=10G --rw=read |
+| random | 8KB | 17MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=8k --io_size=10G --rw=randread |
+| sequential | 8KB | 35MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=8k --io_size=12G --rw=read |
+| random | 16KB | 38MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=16k --io_size=10G --rw=randread |
+| sequential | 16KB | 65MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=16k --io_size=20G --rw=read |
+| random | 32KB | 67MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=32k --io_size=25G --rw=randread |
+| sequential | 32KB | 104MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=32k --io_size=40G --rw=read |
+| random | 64KB | 115MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=64k --io_size=45G --rw=randread |
+| sequential | 64KB | 192MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=64k --io_size=60G --rw=read |
+| random | 128KB | 151MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=128k --io_size=60G --rw=randread |
+| sequential | 128KB | 196MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=128k --io_size=80G --rw=read |
+| random | 256KB | 178MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=256k --io_size=65G --rw=randread |
+| sequential | 256KB | 192MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=256k --io_size=70G --rw=read |
 | random | 512KB | 305MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=512k --io_size=19200M --rw=randread |
 | sequential | 512KB | 394MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=512k --io_size=19200M --rw=read |
 | random | 1024KB | 385MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=1024k --io_size=19200M --rw=randread |
