@@ -90,7 +90,7 @@ Filesystem         Type        Size  Used Avail Use% Mounted on
 
 根基我的磁盘的容量，设置一个2G大小的文件
 ```
-dd if=/dev/zero of=testfile bs=1M count=2048
+dd if=/dev/zero of=tfile bs=1M count=2048
 ```
 
 但这个文件有一个问题，就是内容都是0，这不利于测试真实的情况，因为SSD是根据文件内容的熵，散列到内部的cell里进行并发处理。
@@ -123,7 +123,7 @@ cat /proc/meminfo | grep Cached
 ### page cache的热身
 
 ```
-fio --name=test --filename=testfile --rw=read --ioengine=sync --bs=4k --direct=0
+fio --name=test --filename=tfile --rw=read --ioengine=sync --bs=4k --direct=0
 ```
 
 然后用上面的查看page cache的命令查看，可以看到```Cached:```到了几个G，说明文件已经被缓存到page cache里了
@@ -133,24 +133,24 @@ fio --name=test --filename=testfile --rw=read --ioengine=sync --bs=4k --direct=0
 如果read不经过page cache，i.e., direct=1，
 
 ```
-fio --name=test --filename=testfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=1
+fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=1
 ```
 在我的机器上，throughtput=8MB/s
 
 如果设置direct=0，经过page cache，你会发现结果差不多
 ```
-fio --name=test --filename=testfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0
+fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0
 ```
 这是因为还有一个参数invalidate，这个参数是每次读前，将对应的cache先清除，所以，就和direct=1一样了
 
 如果我们增加设置invaliddate，如下
 ```
-fio --name=test --filename=testfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0
+fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0
 ```
 就会发现throughput=2GB/s左右。这是因为基本都是从内存读到数据（我们之前有做热身）
 如果将随机读改为顺序读（同时不启用page cache），命令如下
 ```
-fio --name=test --filename=testfile --rw=read --io_size=200M --ioengine=sync --bs=4k --direct=1
+fio --name=test --filename=tfile --rw=read --io_size=200M --ioengine=sync --bs=4k --direct=1
 ```
 这时throughput=17MB/s，说明顺序读是随机读一倍。
 
@@ -173,24 +173,24 @@ for i in {1..5}; do <command>; done
 
 | mode | bs | throughput | fio command |
 | :--- | :--------: | :--------: | --- |
-| random | 4KB | 8MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=4k --io_size=5G --rw=randread |
-| sequential | 4KB | 18MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=4k --io_size=10G --rw=read |
-| random | 8KB | 17MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=8k --io_size=10G --rw=randread |
-| sequential | 8KB | 35MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=8k --io_size=12G --rw=read |
-| random | 16KB | 38MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=16k --io_size=10G --rw=randread |
-| sequential | 16KB | 65MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=16k --io_size=20G --rw=read |
-| random | 32KB | 67MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=32k --io_size=25G --rw=randread |
-| sequential | 32KB | 104MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=32k --io_size=40G --rw=read |
-| random | 64KB | 115MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=64k --io_size=45G --rw=randread |
-| sequential | 64KB | 192MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=64k --io_size=60G --rw=read |
-| random | 128KB | 151MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=128k --io_size=60G --rw=randread |
-| sequential | 128KB | 196MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=128k --io_size=80G --rw=read |
-| random | 256KB | 178MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=256k --io_size=65G --rw=randread |
-| sequential | 256KB | 192MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=256k --io_size=70G --rw=read |
-| random | 512KB | 305MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=512k --io_size=19200M --rw=randread |
-| sequential | 512KB | 394MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=512k --io_size=19200M --rw=read |
-| random | 1024KB | 385MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=1024k --io_size=19200M --rw=randread |
-| sequential | 1024KB | 587MB/s | fio --name=t --filename=testfile --ioengine=sync --direct=1 --bs=1024k --io_size=19200M --rw=read |
+| random | 4KB | 8MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=5G --rw=randread |
+| sequential | 4KB | 18MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=10G --rw=read |
+| random | 8KB | 17MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=10G --rw=randread |
+| sequential | 8KB | 35MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=12G --rw=read |
+| random | 16KB | 38MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=16k --io_size=10G --rw=randread |
+| sequential | 16KB | 65MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=16k --io_size=20G --rw=read |
+| random | 32KB | 67MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=32k --io_size=25G --rw=randread |
+| sequential | 32KB | 104MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=32k --io_size=40G --rw=read |
+| random | 64KB | 115MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=64k --io_size=45G --rw=randread |
+| sequential | 64KB | 192MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=64k --io_size=60G --rw=read |
+| random | 128KB | 151MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=60G --rw=randread |
+| sequential | 128KB | 196MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=80G --rw=read |
+| random | 256KB | 178MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=65G --rw=randread |
+| sequential | 256KB | 192MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=70G --rw=read |
+| random | 512KB | 305MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=19200M --rw=randread |
+| sequential | 512KB | 394MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=19200M --rw=read |
+| random | 1024KB | 385MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=19200M --rw=randread |
+| sequential | 1024KB | 587MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=19200M --rw=read |
 
 ## 分析
 
@@ -324,7 +324,7 @@ for i in `seq 1 10`; do fio --name=r --filename=readfile --ioengine=sync --rw=ra
 
 ```
 libao下多任务（怀疑libaio其实也是多线程）
-fio --name=test --filename=testfile --size=400M --rw=randread --ioengine=libaio --direct=1 --bs=4k --iodepth=1
+fio --name=test --filename=tfile --size=400M --rw=randread --ioengine=libaio --direct=1 --bs=4k --iodepth=1
 多线程
-fio --name=test --filename=testfile --size=400M --rw=randread --ioengine=sync --direct=1 --bs=4k --numjobs=4 --thread --group_reporting=1
+fio --name=test --filename=tfile --size=400M --rw=randread --ioengine=sync --direct=1 --bs=4k --numjobs=4 --thread --group_reporting=1
 ```
