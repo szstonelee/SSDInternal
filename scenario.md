@@ -156,7 +156,11 @@ fio --name=test --filename=tfile --rw=read --io_size=200M --ioengine=sync --bs=4
 
 # 纯Read
 
-## 测试注意
+## 基本Read
+
+我们用最基本的read，即ioengine=sync，同时不受page cache影响，所以direct=1。然后比较随机读rw=randread，以及顺序读rw=read，比较block size在不同值下的throughput.
+
+### 测试注意
 
 如果我们尝试将bs改为其他值，包括8k, 16k, 32k，64k，然后比较随机读和顺序读，我们得到下表
 
@@ -169,7 +173,7 @@ NOTE:
 ```
 for i in {1..5}; do <command>; done
 ```
-## 测试结果
+### 测试结果
 
 | mode | bs | throughput | fio command |
 | :--- | :--------: | :--------: | --- |
@@ -192,18 +196,18 @@ for i in {1..5}; do <command>; done
 | random | 1024KB | 184MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=70G --rw=randread |
 | sequential | 1024KB | 220MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=80G --rw=read |
 
-## 分析
+### 分析
 
 基本结论还是可以做出来的
 
-1. SSD下，同一block size，对于throughput，顺序读比随机读有优势。在block size小时（小于或等于16k），是一倍的关系。
-2. block size越大，则throughput越大，block size小时（小于或等于16k），block size大一倍，throughput也接近一倍。最大block size，i.e., 1024k，相比最小的block size，i.e., 4k，其throughput相比可以几十倍的差别。 感觉上，sequential好像是预先读出（因为SSD内部也有SDRAM的cache），因此加快。
+1. SSD下，同一block size，对于throughput，顺序读比随机读有优势。在block size小时（小于或等于16k），是一倍的关系。感觉上，sequential好像是预先读出（因为SSD内部也有SDRAM的cache），因此加快。
+2. block size越大，则throughput越大，block size小时（小于或等于16k），block size大一倍，throughput也接近一倍。最大block size，i.e., 1024k，相比最小的block size，i.e., 4k，其throughput相比可以几十倍的差别。 这比较符合SSD的工作原理，即并发导致高速（parallelism for performance），而block size比较高时，利于SSD内部做并发。而block size到了64k以上时，并发的边际效应开始降低。
 3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，比较高，在k级别。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。
-4. SSD的性能表现不是很稳定，每次测试值都有偏差。即使我们采用5分钟以上的运行时间，这个差别仍存在。20%的差别是很正常的。甚至有时接近倍数的差别。不过，从统计上看，如果足够多的次数，那么出现概率较高的throughput，还是相对稳定。
+4. SSD的性能表现不是很稳定，每次测试值都有偏差。即使我们采用5分钟以上的运行时间，这个差别仍存在。20%的差别是很正常的。甚至有时接近倍数的差别。不过，从统计上看，如果足够多的次数，那么出现概率较高的throughput，还是相对稳定。不稳定的因素不明，只能怀疑是SSD内部的算法，比如：SSD内部的cache的管理。
 
-# read下iodepth的影响
+## iodepth的影响
 
-## 测试结果
+### 测试结果
 
 我们测试iodepth的影响，因此，ioengine需要用libaio，同时必须保证direct=1，否则libaio没有用。
 
@@ -218,7 +222,7 @@ for i in {1..5}; do <command>; done
 | sequential | 4 | 1 | 4KB | 39MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 |
 | sequential | 4 | 4 | 4KB | 46MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 --iodepth_batch=4 |
 
-## 分析
+### 分析
 
 我们只测试了block size=4k，如果block size比较大时，那么iodepth的影响会降低甚至没有。
 
