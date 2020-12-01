@@ -252,7 +252,7 @@ NOTE:
 
 ## 测试结果
 
-| bs | fsync | Throughputh | fio command |
+| bs | fsync | Tp | fio command |
 | :-: | :-: | :-: | -- |
 | 4k | 0 | 288M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=4k |
 | 4k | 1 | 5M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=1G --fsync=1 --bs=4k |
