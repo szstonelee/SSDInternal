@@ -261,9 +261,9 @@ NOTE:
 | 4k | 8 | 27M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=6G --fsync=8 --bs=4k |
 | 8k | 0 | 284M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=8k |
 | 8k | 1 | 9M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=2G --fsync=1 --bs=8k |
-| 8k | 2 | 20M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=3G --fsync=2 --bs=8k |
-| 8k | 4 | 35M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=5G --fsync=4 --bs=8k |
-| 8k | 8 | 31M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=8 --bs=8k |
+| 8k | 2 | 15M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=5G --fsync=2 --bs=8k |
+| 8k | 4 | 29M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=5G --fsync=4 --bs=8k |
+| 8k | 8 | 34M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=8 --bs=8k |
 | 16k | 0 | 257M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=16k |
 | 16k | 1 | 16M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=4G --fsync=1 --bs=16k |
 | 16k | 2 | 18M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=2 --bs=16k |
