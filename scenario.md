@@ -175,7 +175,7 @@ for i in {1..5}; do <command>; done
 ```
 ### 测试结果
 
-| mode | bs | throughput | fio command |
+| mode | bs | Tp | fio command |
 | :--- | :--------: | :--------: | --- |
 | random | 4KB | 8MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=5G --rw=randread |
 | sequential | 4KB | 18MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=10G --rw=read |
@@ -284,6 +284,15 @@ NOTE:
 | 512k | 1 | 211M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=1 --bs=512k |
 | 1024k | 0 | 273M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=12G --fsync=0 --bs=1024k |
 | 1024k | 1 | 239M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=1 --bs=1024k |
+
+## 对比一下libaio
+
+只考虑block size=4k，同时最后用sync，i.e., fsync=0 and end_fsync=1
+
+| bs | iodepth | Tp | fio command |
+| :-: | :-: | -- | -- |
+| 4k | 1 | 288M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=1 |
+
 
 ## 总结
 
