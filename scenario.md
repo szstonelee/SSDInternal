@@ -187,10 +187,10 @@ for i in {1..5}; do <command>; done
 | sequential | 128KB | 196MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=80G --rw=read |
 | random | 256KB | 178MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=65G --rw=randread |
 | sequential | 256KB | 192MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=70G --rw=read |
-| random | 512KB | 305MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=19200M --rw=randread |
-| sequential | 512KB | 394MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=19200M --rw=read |
-| random | 1024KB | 385MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=19200M --rw=randread |
-| sequential | 1024KB | 587MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=19200M --rw=read |
+| random | 512KB | 171MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=randread |
+| sequential | 512KB | 186MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=read |
+| random | 1024KB | 184MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=70G --rw=randread |
+| sequential | 1024KB | 220MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=80G --rw=read |
 
 ## 分析
 
@@ -201,6 +201,21 @@ for i in {1..5}; do <command>; done
 3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，是稳定的，而且比较高。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。同时，小block size下，IOPS都是几K。
 4. SSD的性能表现不是很稳定，每次测试值都有偏差，会到20%左右。当block size接近1M时，这个不稳定非常明显，甚至会有1倍的差别。
 5. 当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
+
+# read下iodepth的影响
+
+我们测试iodepth的影响，因此，ioengine需要用libaio，同时必须保证direct=1，否则libaio没有用。
+
+| mode | iodepth/iodepth_batch | bs | throughput | fio command |
+| :--- | :-----: | :--------: | :--------: | --- |
+| random | 1/1 | 4KB | 10MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=1 |
+| random | 2/1 | 4KB | 13MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=2 |
+| random | 4/1 | 4KB | 14MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 |
+| random | 4/4 | 4KB | 12MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 --iodepth_batch=4 |
+| sequential | 1/1 | 4KB | 16MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=read --iodepth=1 |
+| sequential | 2/1 | 4KB | 27MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=2 |
+| sequential | 4/1 | 4KB | 39MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 |
+| sequential | 4/4 | 4KB | 46MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 --iodepth_batch=4 |
 
 # write log pattern
 
