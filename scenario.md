@@ -211,8 +211,10 @@ for i in {1..5}; do <command>; done
 
 我们测试iodepth的影响，因此，ioengine需要用libaio，同时必须保证direct=1，否则libaio没有用。
 
-| mode | iodepth | iodepth_batch | bs | throughput | fio command |
-| :--- | :-----: | :--: | :--------: | :--------: | --- |
+depth == --iodepth; batch == --iodepth_batch, bs == bs or block size, Tp == throughput
+
+| mode | depth | batch | bs | Tp | fio command |
+| --- | ----- | -- | -------- | -------- | --- |
 | random | 1 | 1 | 4KB | 10MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=1 |
 | random | 2 | 1 | 4KB | 13MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=2 |
 | random | 4 | 1 | 4KB | 14MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 |
