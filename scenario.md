@@ -215,14 +215,14 @@ depth == --iodepth; batch == --iodepth_batch, bs == bs or block size, Tp == thro
 
 | mode | depth | batch | bs | Tp | fio command |
 | --- | ----- | -- | -------- | -------- | --- |
-| random | 1 | 1 | 4KB | 10MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=1 |
-| random | 2 | 1 | 4KB | 13MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=2 |
-| random | 4 | 1 | 4KB | 14MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 |
-| random | 4 | 4 | 4KB | 12MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 --iodepth_batch=4 |
-| sequential | 1 | 1 | 4KB | 16MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=read --iodepth=1 |
-| sequential | 2 | 1 | 4KB | 27MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=2 |
-| sequential | 4 | 1 | 4KB | 39MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 |
-| sequential | 4 | 4 | 4KB | 46MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 --iodepth_batch=4 |
+| random | 1 | 1 | 4K | 10MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=1 |
+| random | 2 | 1 | 4K | 13MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=2 |
+| random | 4 | 1 | 4K | 14MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 |
+| random | 4 | 4 | 4K | 12MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 --iodepth_batch=4 |
+| sequential | 1 | 1 | 4K | 16MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=read --iodepth=1 |
+| sequential | 2 | 1 | 4K | 27MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=2 |
+| sequential | 4 | 1 | 4K | 39MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 |
+| sequential | 4 | 4 | 4K | 46MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 --iodepth_batch=4 |
 
 ### 分析
 
@@ -289,12 +289,15 @@ NOTE:
 
 ## 对比一下libaio
 
-只考虑block size=4k，同时最后用sync，i.e., fsync=0 and end_fsync=1
+只考虑block size=4k，同时只是最后用sync，i.e., fsync=0 and end_fsync=1
 
 | bs | iodepth | Tp | fio command |
 | :-: | :-: | -- | -- |
-| 4k | 1 | 288M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=1 |
-
+| 4k | 1 | 18M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=1 |
+| 4k | 2 | 26M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=2 |
+| 4k | 4 | 35M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=4 |
+| 4k | 8 | 37M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=8 |
+| 4k | 16 | 41M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=16 |
 
 ## 总结
 
