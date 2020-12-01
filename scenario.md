@@ -176,7 +176,7 @@ for i in {1..5}; do <command>; done
 ### 测试结果
 
 | mode | bs | Tp | fio command |
-| :--- | :--------: | :--------: | --- |
+| --- | -------- | -------- | --- |
 | random | 4KB | 8MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=5G --rw=randread |
 | sequential | 4KB | 18MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=10G --rw=read |
 | random | 8KB | 17MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=10G --rw=randread |
