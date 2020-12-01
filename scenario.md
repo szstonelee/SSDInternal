@@ -233,9 +233,9 @@ for i in {1..5}; do <command>; done
 
 ## 命令说明
 
-因为是Log，所以，我们可以确定是sequential，--rw=write，同时，我们只考虑经过os page cache，i.e., --direct=1
+因为是Log，所以，我们可以确定是sequential，--rw=write，同时，我们只考虑经过os page cache的writeback写，i.e., --direct=0
 
-同时，既要用到page cache，同时又不能只有page cache，所以，--size有时需要远远超过os cache
+同时，既要用到page cache，同时又不能只有page cache，所以，有可能的话，--size需要远远超过os cache。
 
 在我的Mac上，cat /proc/meminfo | grep Cached，发现page cache是2G左右
 
@@ -244,7 +244,7 @@ for i in {1..5}; do <command>; done
 fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=0 --bs=4k
 ```
 NOTE: 
-1. --end_fsync=1，最后文件写完，给一个fsync。
+1. --end_fsync=1，最后文件写完，保证给一个fsync，因为有时fsync=0
 2. 如果direct=1，那么fsync参数不一定有效，[参考fio的文档](https://fio.readthedocs.io/en/latest/fio_doc.html#)
 3. 如果测试时间比较短（只有几十秒），请用多次```for i in {1..5}; do <command>; done```，然后最高频率的throughput作为其结果
 
@@ -288,9 +288,9 @@ NOTE:
 ## 总结
 
 1. 当fysnc=0时，bs从4k到1024k,Throughput都差别不大，都是近300M。这意味写盘都先到page cache里，然后由os来write back。一般而言，都是接近磁盘的写的最大带宽。
-2. 当fsync=1时，是最慢的写盘操作。每一个bs写盘，都要flush & sync到SSD后才能继续。这相当于数据库系统里的每次写盘都sync的配置。是数据最安全的，但也是最慢的。其中，在4k，8k, 16k时，相比最大速度的写盘，有10倍以上的差别。很多数据库的页的大小，或者最小写盘单位，就是这三个单位。
-3. 当fsync=1时，当bs比较大，比如512k, 1024k时，其写盘速度和最大带宽差别不大，因为当bs比较大时，SSD的并发优势将会被利用到。
-4. 当bs比较小时，如4k，比较fsync的值从1到8，发现其对应的throughput也几乎是倍数增加。这也意味当小的写操作时，batch操作将会很好地利用到带宽。这也是很多数据库写盘操作里推崇batch的原因。
+2. 当fsync=1时，是最慢的写盘操作。每一个bs写盘，都要flush & sync到SSD后才能继续。这相当于数据库系统里的每次写盘都sync的配置。是数据最安全的，但也是最慢的。其中，在4k，8k, 16k时，相比fsync=0或fsync!=0但bs=1024k的写盘，有10倍以上的差别。很多数据库的页的大小，或者最小写盘单位，就是这三个单位。
+3. 当fsync=1时，当bs比较大，比如512k, 1024k时，其写盘速度和最大带宽差别不大，因为当bs比较大时，SSD的并发优势将会被充分利用到。
+4. 当bs比较小时，如4k，比较fsync的值从1到8，发现其对应的throughput也几乎是50%-100%的增加。这也意味当小的写操作时，batch操作将会很好地利用到带宽。这也是很多数据库写盘操作里推崇batch的原因。
 
 # Write mix with Read 
 
@@ -304,12 +304,13 @@ NOTE:
 
 然后，我们尝试下面的命令
 先启动随机读， bs=4k, 不走cache(direct=1)
+NOTE: rfile来自https://releases.ubuntu.com/20.04/，一个不到1G的安装包
 ```
-for i in `seq 1 10`; do fio --name=r --filename=readfile --ioengine=sync --rw=randread --io_size=50M --bs=4k --direct=1; done
+for i in {1..10}; do fio --name=r --filename=rfile --ioengine=sync --rw=randread --io_size=50M --bs=4k --direct=1; done
 ```
 紧跟着马上几乎同时启动顺序写，bs=1024k，走page cache, i.e., direct=0 & fsync=0
 ```
-for i in `seq 1 30`; do fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=0 --bs=1024k; done
+for i in {1..30}; do fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=6G --fsync=0 --bs=1024k; done
 ```
 
 我们发现，对于顺序走page cache的写，其throughput变化不太大。有时还在200-300M之间，有时就在100-200M之间。而且200-300M的概率要高于100-200M。最大值到了297M/s，最低到了130M/s。所以，估计也就最多20%的损失。
@@ -322,18 +323,22 @@ for i in `seq 1 30`; do fio --name=w --rw=write --ioengine=sync --direct=0 --end
 
 先启动写
 ```
-for i in `seq 1 30`; do fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=0 --bs=1024k; done
+for i in {1..30}; do fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=5G --fsync=0 --bs=1024k; done
 ```
 然后几乎同时启动随机block size=1024k的读
 ```
-for i in `seq 1 10`; do fio --name=r --filename=readfile --ioengine=sync --rw=randread --io_size=900M --bs=1024k --direct=1; done
+for i in {1..10}; do fio --name=r --filename=rfile --ioengine=sync --rw=randread --io_size=900M --bs=1024k --direct=1; done
 ```
 
 我们发现，对于写，没有太大影响， 比上面的block size=4k影响还要小。
 
-对于读，如果纯粹读，从上面的数据看，throughput可以到400M/s或500M/s这个量级。但在这个测试中的并发中，发现基本throughput都降低到20M/s左右，有20多倍的降低。
+对于读，如果纯粹读，从之前的数据看，throughput可以到近200M。但在这个测试中的并发中，发现基本throughput在20M多或30M多，有6-9倍的降低。
 
-所以，通过两个测试，可以知道，对于经过page cache的log写（block size=1024k），其throughput没有太大影响。影响大的是读（我们只考虑随机读，这也是生产环境的真实现象），不管是block size = 4k，还是block size = 1024k，和纯粹的比，都有大幅的降低，20多倍，或者40多倍。
+## 分析和结论
+
+所以，通过两个测试，可以知道，对于经过page cache的log写（block size=1024k），其throughput没有太大影响。影响大的是读（我们只考虑随机读，这也是生产环境的真实情况），不管是block size = 4k，还是block size = 1024k，和纯粹的比，都有大幅的降低。
+
+这是因为，page cache的writeback，一次性占用整个SSD的带宽，然后中间见缝插针地，来了一些random read。如果random read的block size比较小的话，相应的io数会多一些，因此对writeback的影响也相应大一些。但不管如何，writeback都是主要的带宽使用者，剩下的边角余料，才能供给random read.
 
 不过，好在，读我们是很容易做load balance的，所以写不受太大影响，是好事。
 
