@@ -154,16 +154,16 @@ fio --name=test --filename=tfile --rw=read --io_size=200M --ioengine=sync --bs=4
 ```
 这时throughput=17MB/s，说明顺序读是随机读一倍。
 
-# read各种block size下的对比
+# 纯Read
 
 ## 测试注意
 
 如果我们尝试将bs改为其他值，包括8k, 16k, 32k，64k，然后比较随机读和顺序读，我们得到下表
 
 NOTE: 
-1. 测试文件大些，如果测试文件过小，或者用了比较小的size值，会导致throughput明显过高（可达1倍）
-2. 我们的测试时间需要足够长，至少5分钟以上，否则，请修改io_size参数。如果时间过短，SSD内部的缓存可能起很大作用，带宽有2倍的差别。
-3. 建议多测几次，取中间值或概率较多的值。即使每次几分钟，每次的值都有不同，最低和最高有50%的差别。
+1. 测试文件大些，如果测试文件过小，或者用了比较小的size值，会导致throughput明显过高（可达1倍）。如上文，测试文件最好是安装包等有压缩数据的文件，也比较真实模拟生产环境。
+2. 我们的测试时间需要足够长，至少5分钟以上，否则，请修改io_size参数。如果时间过短，SSD内部的缓存可能起很大作用，有时结果会有2倍的差别。
+3. 建议多测几次，取中间值或概率较多的值。即使每次几分钟，每次的值都有不同，最低和最高有时接近100%的差别（这个不稳定让人疑惑）。
 
 如果想多测试几次，可以用下面的shell命令
 ```
@@ -207,16 +207,16 @@ for i in {1..5}; do <command>; done
 
 我们测试iodepth的影响，因此，ioengine需要用libaio，同时必须保证direct=1，否则libaio没有用。
 
-| mode | iodepth/iodepth_batch | bs | throughput | fio command |
-| :--- | :-----: | :--------: | :--------: | --- |
-| random | 1/1 | 4KB | 10MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=1 |
-| random | 2/1 | 4KB | 13MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=2 |
-| random | 4/1 | 4KB | 14MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 |
-| random | 4/4 | 4KB | 12MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 --iodepth_batch=4 |
-| sequential | 1/1 | 4KB | 16MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=read --iodepth=1 |
-| sequential | 2/1 | 4KB | 27MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=2 |
-| sequential | 4/1 | 4KB | 39MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 |
-| sequential | 4/4 | 4KB | 46MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 --iodepth_batch=4 |
+| mode | iodepth | iodepth_batch | bs | throughput | fio command |
+| :--- | :-----: | :--: | :--------: | :--------: | --- |
+| random | 1 | 1 | 4KB | 10MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=1 |
+| random | 2 | 1 | 4KB | 13MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=2 |
+| random | 4 | 1 | 4KB | 14MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 |
+| random | 4 | 4 | 4KB | 12MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 --iodepth_batch=4 |
+| sequential | 1 | 1 | 4KB | 16MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=read --iodepth=1 |
+| sequential | 2 | 1 | 4KB | 27MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=2 |
+| sequential | 4 | 1 | 4KB | 39MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 |
+| sequential | 4 | 4 | 4KB | 46MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 --iodepth_batch=4 |
 
 ## 分析
 
@@ -225,7 +225,7 @@ for i in {1..5}; do <command>; done
 1. 对于random模式，iodepth的影响不大，可以认为接近于0.
 2. 对于sequential模式，iodepth有一定的影响，比如：iodepth=4时，是iodepth=1的几乎3倍。如果用SSD内部的cache去解释，似乎可以解释得通（包括对比random模式）。
 
-# write log pattern
+# 纯Write
 
 ## 命令
 
@@ -287,7 +287,9 @@ NOTE:
 3. 当fsync=1时，当bs比较大，比如512k, 1024k时，其写盘速度和最大带宽差别不大，因为当bs比较大时，SSD的并发优势将会被利用到。
 4. 当bs比较小时，如4k，比较fsync的值从1到8，发现其对应的throughput也几乎是倍数增加。这也意味当小的写操作时，batch操作将会很好地利用到带宽。这也是很多数据库写盘操作里推崇batch的原因。
 
-# Write of page cache with random 4k read
+# Write mix with Read 
+
+## Write of page cache with random 4k read
 
 我们测试下面这种情况：首先write是log模式，同时全部走page cache，这样write log是最大效率。同时，另外一个进程（或线程）同时并发bs=4k的random read。然后看互相的影响。
 
@@ -309,7 +311,7 @@ for i in `seq 1 30`; do fio --name=w --rw=write --ioengine=sync --direct=0 --end
 
 但对于随机读，并发时影响很大，大部分都在0.5M/s以下，最低时仅有0.2M/s。有接近50倍的差别。
 
-# Write of page cache with random 1024k read
+## Write of page cache with random 1024k read
 
 这个是模拟log写，和background做compaction时的随机大block size读的情况
 
