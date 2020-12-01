@@ -196,13 +196,14 @@ for i in {1..5}; do <command>; done
 
 基本结论还是可以做出来的
 
-1. SSD下，同一block size，对于throughput，顺序读比随机读有优势。在block size小时（64K），是一倍。当block size比较大，也是顺序读要好些。
-2. block size越大，则throughput越大，block size小时（64K），block size大一倍，throughput也接近一倍。当block size比较大时，也会提高，但不是线性。大block size时，其throughput可以达到小的几十倍。
-3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，是稳定的，而且比较高。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。同时，小block size下，IOPS都是几K。
-4. SSD的性能表现不是很稳定，每次测试值都有偏差，会到20%左右。当block size接近1M时，这个不稳定非常明显，甚至会有1倍的差别。
-5. 当刚copy一个大文件过来时，随后的read会性能较差，怀疑是gc导致。上面的测试数据，仅限于只读，是理想状况。
+1. SSD下，同一block size，对于throughput，顺序读比随机读有优势。在block size小时（小于或等于16k），是一倍的关系。
+2. block size越大，则throughput越大，block size小时（小于或等于16k），block size大一倍，throughput也接近一倍。最大block size，i.e., 1024k，相比最小的block size，i.e., 4k，其throughput相比可以几十倍的差别。 感觉上，sequential好像是预先读出（因为SSD内部也有SDRAM的cache），因此加快。
+3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，比较高，在k级别。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。
+4. SSD的性能表现不是很稳定，每次测试值都有偏差。即使我们采用5分钟以上的运行时间，这个差别仍存在。20%的差别是很正常的。甚至有时接近倍数的差别。不过，从统计上看，如果足够多的次数，那么出现概率较高的throughput，还是相对稳定。
 
 # read下iodepth的影响
+
+## 测试结果
 
 我们测试iodepth的影响，因此，ioengine需要用libaio，同时必须保证direct=1，否则libaio没有用。
 
@@ -216,6 +217,13 @@ for i in {1..5}; do <command>; done
 | sequential | 2/1 | 4KB | 27MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=2 |
 | sequential | 4/1 | 4KB | 39MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 |
 | sequential | 4/4 | 4KB | 46MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 --iodepth_batch=4 |
+
+## 分析
+
+我们只测试了block size=4k，如果block size比较大时，那么iodepth的影响会降低甚至没有。
+
+1. 对于random模式，iodepth的影响不大，可以认为接近于0.
+2. 对于sequential模式，iodepth有一定的影响，比如：iodepth=4时，是iodepth=1的几乎3倍。如果用SSD内部的cache去解释，似乎可以解释得通（包括对比random模式）。
 
 # write log pattern
 
