@@ -224,11 +224,22 @@ depth == --iodepth; batch == --iodepth_batch, bs == bs or block size, Tp == thro
 | sequential | 4 | 1 | 4K | 39MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 |
 | sequential | 4 | 4 | 4K | 46MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 --iodepth_batch=4 |
 
+并发(multi process or multi thread)情况下的结果
+```
+fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=500M --rw=randread --iodepth=16 --numjobs=16 --group_reporting
+```
+Throughput = 12.4MB/s, IOPS = 3016
+
+```
+fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=500M --rw=randread --iodepth=16 --numjobs=16 --group_reporting
+```
+Throughput = 11.3MB/s, IOPS = 2768
+
 ### 分析
 
 我们只测试了block size=4k，如果block size比较大时，那么iodepth的影响会降低甚至没有。
 
-1. 对于random模式，iodepth的影响不大，可以认为接近于0.
+1. 对于random模式，iodepth的影响不大，可以认为接近于0。注：采用了并发模式，--numjobs=16 --group_reporting，结果差不多。
 2. 对于sequential模式，iodepth有一定的影响，比如：iodepth=4时，是iodepth=1的几乎3倍。如果用SSD内部的cache去解释，似乎可以解释得通（包括对比random模式）。
 
 # 纯Write
