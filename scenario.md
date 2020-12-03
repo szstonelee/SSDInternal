@@ -97,7 +97,7 @@ dd if=/dev/zero of=tfile bs=1M count=2048
 
 所以，用真实的数据文件，或者下载一个大小相当的文件包（最好是压缩的文件，比较接近真实的情况）
 
-我是下载了一个Ubuntu 20的Desktop安装版本，有近3G大小。
+我是下载了一个[Ubuntu 20的Desktop安装版本，有近3G大小](https://releases.ubuntu.com/20.04/)。
 
 同时发现，如果文件过小（比如百兆大小文件针对G量级文件），有1倍的数据差异。所以，建议部署接近Production的数据量，比如针对Rocksdb，部署多个文件，总量可达TB级别，参考fio的Target file/device的相关说明。
 
@@ -312,7 +312,7 @@ NOTE:
 
 我们测试下面这种情况：首先write是log模式，同时全部走page cache，这样write log是最大效率。同时，另外一个进程（或线程）同时并发bs=4k的random read。然后看互相的影响。
 
-在没有写的影响，纯粹的随机读，参考上面的测试数据，throughput是10M/s左右，i.e.，IOPS是20K以上。
+在没有写的影响，纯粹的随机读，参考上面的测试数据，throughput是10M/s左右，i.e.，IOPS是2K以上。
 
 在没有读的影响下，纯粹的顺序走page cache写，参考上面的测试数据，throughput是200-300M/s
 
@@ -327,7 +327,7 @@ for i in {1..10}; do fio --name=r --filename=rfile --ioengine=sync --rw=randread
 for i in {1..30}; do fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=6G --fsync=0 --bs=1024k; done
 ```
 
-我们发现，对于顺序走page cache的写，其throughput变化不太大。有时还在200-300M之间，有时就在100-200M之间。而且200-300M的概率要高于100-200M。最大值到了297M/s，最低到了130M/s。所以，估计也就最多20%的损失。
+我们发现，对于顺序走page cache的写，其throughput变化不太大。有时还在200-300M之间，有时就在100-200M之间。而且200-300M的概率要高于100-200M。最大值到了297M/s，最低到了130M/s。所以，估计也就30%的损失。
 
 但对于随机读，并发时影响很大，大部分都在0.5M/s以下，最低时仅有0.2M/s。有接近50倍的差别。
 
@@ -350,7 +350,7 @@ for i in {1..10}; do fio --name=r --filename=rfile --ioengine=sync --rw=randread
 
 ## 分析和结论
 
-所以，通过两个测试，可以知道，对于经过page cache的log写（block size=1024k），其throughput没有太大影响。影响大的是读（我们只考虑随机读，这也是生产环境的真实情况），不管是block size = 4k，还是block size = 1024k，和纯粹的比，都有大幅的降低。
+所以，通过两个测试，可以知道，对于经过page cache的log写（block size=1024k），其throughput没有严重的影响（30%的影响）。影响大的是读（我们只考虑随机读，这也是生产环境的真实情况），不管是block size = 4k，还是block size = 1024k，和纯粹的比，都有大幅的降低。
 
 这是因为，page cache的writeback，一次性占用整个SSD的带宽，然后中间见缝插针地，来了一些random read。如果random read的block size比较小的话，相应的io数会多一些，因此对writeback的影响也相应大一些。但不管如何，writeback都是主要的带宽使用者，剩下的边角余料，才能供给random read.
 
