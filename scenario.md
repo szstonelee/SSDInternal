@@ -329,7 +329,7 @@ NOTE:
 
 然后，我们尝试下面的命令
 先启动随机读， bs=4k, 不走cache(direct=1)
-NOTE: rfile来自https://releases.ubuntu.com/20.04/，一个不到1G的安装包
+NOTE: [rfile来自一个不到1G的安装包](https://releases.ubuntu.com/20.04/)
 ```
 for i in {1..10}; do fio --name=r --filename=rfile --ioengine=sync --rw=randread --io_size=50M --bs=4k --direct=1; done
 ```
