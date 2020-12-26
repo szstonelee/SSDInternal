@@ -377,14 +377,18 @@ for i in {1..10}; do fio --name=r --filename=rfile --ioengine=sync --rw=randread
 2. sequential在block size从小到大时，throughput几乎无变化，非常奇怪
 2. 多线程的因素，到底是多线程，还是io任务队列足够多（需要做单线程多io任务， 和多线程的比较）
 
-当前还不能测试，因为发现自己机器的Linux下的io submitted queue length & io completed queue length，在1-2之间
-怀疑可能是：
-1. Multipass虚拟机导致，即driver并没有使用到NVMe的接口（否则queue length应该可以上去）
-2. 还有几十自己的Mac OS的SSD的性能确实差，实际的length（注意：不是libaio下的iodepth）
+另外还有一个测试报告，[Samsung 960 Pro](https://www.anandtech.com/show/10754/samsung-960-pro-ssd-review)。
 
-```
-libao下多任务（怀疑libaio其实也是多线程）
-fio --name=test --filename=tfile --size=400M --rw=randread --ioengine=libaio --direct=1 --bs=4k --iodepth=1
-多线程
-fio --name=test --filename=tfile --size=400M --rw=randread --ioengine=sync --direct=1 --bs=4k --numjobs=4 --thread --group_reporting=1
-```
+从上面这个测试报告，可以看出，如果QD=1，Block Size = 4KB时，其IOPS = 14K, 也就是说throughput是56MB/s。相当于Sequential Read的3500MB/s的 1/63。
+
+对于写，QD=1, Block Size = 4KB，其IOPS是50K，即throughtput是200MB/s, 是Sequential Write的2100MB/s的 1/11。
+
+而当QD=32时，对于读，Block Size = 4KB，其IOPS是440K，即throughput是1760MB/s，因此对比Sequential，比例变为 1/2。
+
+而当QD=32时，对于写，Block Size = 4KB，其IOPS是360K，即throughput是1440MB/s，因此对比Sequential，比例变为 1/1。
+
+从这个报告看出，block size小时，如果queue depth比较多，其性能，和sequential或block size很大时非常接近，即SSD的并发得到充分利用。
+
+这和多线程一起工作，是一个道理。
+
+所以，我们再测试block size比较小的4KB时，一定要注意这个并发性，否则，就没有太大的差别，容易搞错测试的本质。
