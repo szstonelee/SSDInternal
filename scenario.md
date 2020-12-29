@@ -257,7 +257,7 @@ Throughput = 11.3MB/s, IOPS = 2768
 fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=0 --bs=4k
 ```
 NOTE: 
-1. --end_fsync=1，最后文件写完，保证给一个fsync，因为有时fsync=0
+1. --end_fsync=1，最后文件写完，保证给一个fsync，因为有时fsync=0 (比如上面的direct=0等价于fsync=0)
 2. 如果direct=1，那么fsync参数不一定有效，[参考fio的文档](https://fio.readthedocs.io/en/latest/fio_doc.html#)
 3. 如果测试时间比较短（只有几十秒），请用多次```for i in {1..5}; do <command>; done```，然后最高频率的throughput作为其结果
 
@@ -314,7 +314,7 @@ NOTE:
 
 1. 当fysnc=0时，bs从4k到1024k,Throughput都差别不大，都是近300M。这意味写盘都先到page cache里，然后由os来write back。一般而言，都是接近磁盘的写的最大带宽。
 2. 当fsync=1时，是最慢的写盘操作。每一个bs写盘，都要flush & sync到SSD后才能继续。这相当于数据库系统里的每次写盘都sync的配置。是数据最安全的，但也是最慢的。其中，在4k，8k, 16k时，相比fsync=0或fsync!=0但bs=1024k的写盘，有10倍以上的差别。很多数据库的页的大小，或者最小写盘单位，就是这三个单位。
-3. 当fsync=1时，当bs比较大，比如512k, 1024k时，其写盘速度和最大带宽差别不大，因为当bs比较大时，SSD的并发优势将会被充分利用到。
+3. 当fsync=1时，当bs比较大，比如512k, 1024k时，其写盘速度和最大带宽差别不大，因为当bs比较大时，SSD的并发优势将会被充分利用到。同时，这也给设计带来一个技巧，就是batch write。收集一批小的写，然后集中后用一个比较大的block size写入，这时，其性能基本是最大值，和OS page cache的效果差不多。
 4. 当bs比较小时，如4k，比较fsync的值从1到8，发现其对应的throughput也几乎是50%-100%的增加。这也意味当小的写操作时，batch操作将会很好地利用到带宽。这也是很多数据库写盘操作里推崇batch的原因。
 
 # Write mix with Read 
