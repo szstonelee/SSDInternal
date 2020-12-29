@@ -203,8 +203,11 @@ for i in {1..5}; do <command>; done
 基本结论还是可以做出来的
 
 1. SSD下，同一block size，对于throughput，顺序读比随机读有优势。在block size小时（小于或等于16k），是一倍的关系。感觉上，sequential好像是预先读出（因为SSD内部也有SDRAM的cache），因此加快。
+
 2. block size越大，则throughput越大，block size小时（小于或等于16k），block size大一倍，throughput也接近一倍。最大block size，i.e., 1024k，相比最小的block size，i.e., 4k，其throughput相比可以几十倍的差别。 这比较符合SSD的工作原理，即并发导致高速（parallelism for performance），而block size比较高时，利于SSD内部做并发。而block size到了64k以上时，并发的边际效应开始降低。
+
 3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，比较高，在k级别。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。
+
 4. SSD的性能表现不是很稳定，每次测试值都有偏差。即使我们采用5分钟以上的运行时间，这个差别仍存在。20%的差别是很正常的。甚至有时接近倍数的差别。不过，从统计上看，如果足够多的次数，那么出现概率较高的throughput，还是相对稳定。不稳定的因素不明，只能怀疑是SSD内部的算法，比如：SSD内部的cache的管理。
 
 ## iodepth的影响
