@@ -179,24 +179,24 @@ for i in {1..5}; do <command>; done
 
 | mode | bs | Tp | fio command |
 | --- | -------- | -------- | --- |
-| random | 4KB | 8MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=5G --rw=randread |
-| sequential | 4KB | 18MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=10G --rw=read |
-| random | 8KB | 17MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=10G --rw=randread |
-| sequential | 8KB | 35MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=12G --rw=read |
-| random | 16KB | 38MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=16k --io_size=10G --rw=randread |
-| sequential | 16KB | 65MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=16k --io_size=20G --rw=read |
-| random | 32KB | 67MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=32k --io_size=25G --rw=randread |
-| sequential | 32KB | 104MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=32k --io_size=40G --rw=read |
-| random | 64KB | 115MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=64k --io_size=45G --rw=randread |
-| sequential | 64KB | 192MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=64k --io_size=60G --rw=read |
-| random | 128KB | 151MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=60G --rw=randread |
-| sequential | 128KB | 196MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=80G --rw=read |
-| random | 256KB | 178MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=65G --rw=randread |
-| sequential | 256KB | 192MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=70G --rw=read |
-| random | 512KB | 171MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=randread |
-| sequential | 512KB | 186MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=read |
-| random | 1024KB | 184MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=70G --rw=randread |
-| sequential | 1024KB | 220MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=80G --rw=read |
+| random | 4KB | 10.0MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=5G --rw=randread |
+| sequential | 4KB | 20.8MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=10G --rw=read |
+| random | 8KB | 21.5MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=10G --rw=randread |
+| sequential | 8KB | 37.1MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=12G --rw=read |
+| random | 16KB | 44.3MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=16k --io_size=10G --rw=randread |
+| sequential | 16KB | 84.4MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=16k --io_size=20G --rw=read |
+| random | 32KB | 78.2MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=32k --io_size=25G --rw=randread |
+| sequential | 32KB | 149MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=32k --io_size=40G --rw=read |
+| random | 64KB | 152MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=64k --io_size=45G --rw=randread |
+| sequential | 64KB | 267MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=64k --io_size=60G --rw=read |
+| random | 128KB | 211MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=60G --rw=randread |
+| sequential | 128KB | 414MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=80G --rw=read |
+| random | 256KB | 354MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=65G --rw=randread |
+| sequential | 256KB | 534MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=70G --rw=read |
+| random | 512KB | 290MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=randread |
+| sequential | 512KB | 452MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=read |
+| random | 1024KB | 841MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=70G --rw=randread |
+| sequential | 1024KB | 1285MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=80G --rw=read |
 
 ### 分析
 
@@ -216,14 +216,16 @@ for i in {1..5}; do <command>; done
 
 我们测试iodepth的影响，因此，ioengine需要用libaio，同时必须保证direct=1，否则libaio没有用。
 
-depth == --iodepth; batch == --iodepth_batch, bs == bs or block size, Tp == throughput
+io depth == --iodepth; io batch == --iodepth_batch, bs == bs or block size, Tp == throughput
 
-| mode | depth | batch | bs | Tp | fio command |
+| mode | io depth | io batch | bs | Tp | fio command |
 | --- | ----- | -- | -------- | -------- | --- |
 | random | 1 | 1 | 4K | 10MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=1 |
 | random | 2 | 1 | 4K | 13MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=2 |
 | random | 4 | 1 | 4K | 14MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 |
 | random | 4 | 4 | 4K | 12MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 --iodepth_batch=4 |
+| random | 32 | 1 | 4K | 15MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=32  |
+| random | 32 | 8 | 4K | 13MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=32 --iodepth_batch=8 |
 | sequential | 1 | 1 | 4K | 16MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=read --iodepth=1 |
 | sequential | 2 | 1 | 4K | 27MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=2 |
 | sequential | 4 | 1 | 4K | 39MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 |
@@ -382,13 +384,40 @@ for i in {1..10}; do fio --name=r --filename=rfile --ioengine=sync --rw=randread
 
 # read multi thread vs io depth
 
-[对这篇文章Figure3](https://www.usenix.org/system/files/conference/fast16/fast16-papers-lu.pdf)，里面的东西有所怀疑
+## WiscKey里的测试
 
-1. sequential和random差距这么大(但多线程后，throughput有趋同)
+[对这篇文章 WiscKey- Separating Keys from Values in SSD-conscious Storage， Figure3](https://www.usenix.org/system/files/conference/fast16/fast16-papers-lu.pdf)，里面的东西有所怀疑，因为从图示分析得到下面三点，但我自己的验证没有这样的结果稍微有些不同，见下表
 
-2. sequential在block size从小到大时，throughput几乎无变化，非常奇怪
+1. sequential在block size从小到大时，throughput几乎无变化。有两种可能，其一，就是queued depth很大，这样小的block size即使咋单线程下，也可以因为queue汇合成大的block size；其二，就是多线程效果，这样并发的请求达到和queue depth同样的效果。
 
-2. 多线程的因素，到底是多线程，还是io任务队列足够多（需要做单线程多io任务， 和多线程的比较）
+2. random read随着block size增大，不管是单线程，还是多线程，都是增大的。但多线程，有进一步放大的效果。在一定线程数和不太大的block size下，对于random read，也可以达到和sequential read一样的最高的throughput。图中单线程只到block size=256K这种情况，其throughput也达到最大值的近60%，如果能到block size=1M，怀疑能接近最大的带宽。
+
+3. 多线程的因素，到底是多线程，还是io任务队列足够多（需要做单线程多io任务， 和多线程的比较）
+
+## 我自己Mac测试情况
+
+我自己在Mac上做上面的测试
+
+| bs | threads | throughtput | command |
+| -- | -- | -- | -- |
+| 4k | 1 | 15.9MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=1G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
+| 4k | 32 | 21.3MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=100M --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
+| 16k | 1 | 101MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=16k --io_size=4G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
+| 16k | 32 | 110MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=16k --io_size=400M --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
+| 64k | 1 | 236MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=64k --io_size=16G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
+| 64k | 32 | 414MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=64k --io_size=1600M --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
+| 256k | 1 | 522MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=256k --io_size=64G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
+| 256k | 32 | 1424MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=256k --io_size=7G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
+| 1024k | 1 | 1323MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=1024k --io_size=128G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
+| 1024k | 32 | 2564MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=1024k --io_size=15G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
+
+结论:
+
+1. 当threads=1时，和上面的sync read比，差别不大，i.e., iodepth不是很起作用，反而是block size起作用。
+
+2. 对于threads=32，block size = 4k 和 16k，性能相比threads=1，没有什么区别。到64K才开始有效，大概是一倍的的提升。
+
+## 网上一个Samsung SSD的测试报告
 
 另外还有一个测试报告，[Samsung 960 Pro](https://www.anandtech.com/show/10754/samsung-960-pro-ssd-review)。
 
