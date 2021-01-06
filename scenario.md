@@ -3,6 +3,8 @@
 
 在Mac上的虚拟Linux(基于MultiPass)
 
+如果是新购置的SSD或purge过的SSD，请预热读写至少超过24小时以上。避免SSD的clifff现象。
+
 ## Linux版本
 
 ```
@@ -99,6 +101,10 @@ dd if=/dev/zero of=tfile bs=1M count=2048
 
 我是下载了一个[Ubuntu 20的Desktop安装版本，有近3G大小](https://releases.ubuntu.com/20.04/)。
 
+```
+curl <URI> -o tfile
+```
+
 同时发现，如果文件过小（比如百兆大小文件针对G量级文件），有1倍的数据差异。所以，建议部署接近Production的数据量，比如针对Rocksdb，部署多个文件，总量可达TB级别，参考fio的Target file/device的相关说明。
 
 ## read & direct & invalidate
@@ -180,35 +186,35 @@ for i in {1..5}; do <command>; done
 | mode | bs | Tp | fio command |
 | --- | -------- | -------- | --- |
 | random | 4KB | 10.0MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=5G --rw=randread |
-| sequential | 4KB | 20.8MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=10G --rw=read |
-| random | 8KB | 21.5MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=10G --rw=randread |
-| sequential | 8KB | 37.1MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=12G --rw=read |
+| sequential | 4KB |  | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=10G --rw=read |
+| random | 8KB | 21.6MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=10G --rw=randread |
+| sequential | 8KB | 42.6MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=8k --io_size=12G --rw=read |
 | random | 16KB | 44.3MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=16k --io_size=10G --rw=randread |
 | sequential | 16KB | 84.4MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=16k --io_size=20G --rw=read |
 | random | 32KB | 78.2MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=32k --io_size=25G --rw=randread |
 | sequential | 32KB | 149MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=32k --io_size=40G --rw=read |
 | random | 64KB | 152MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=64k --io_size=45G --rw=randread |
-| sequential | 64KB | 267MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=64k --io_size=60G --rw=read |
-| random | 128KB | 211MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=60G --rw=randread |
-| sequential | 128KB | 414MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=80G --rw=read |
-| random | 256KB | 354MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=65G --rw=randread |
-| sequential | 256KB | 534MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=70G --rw=read |
-| random | 512KB | 290MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=randread |
-| sequential | 512KB | 452MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=read |
-| random | 1024KB | 841MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=70G --rw=randread |
-| sequential | 1024KB | 1285MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=80G --rw=read |
+| sequential | 64KB | | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=64k --io_size=60G --rw=read |
+| random | 128KB | 171MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=60G --rw=randread |
+| sequential | 128KB | 378MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=128k --io_size=80G --rw=read |
+| random | 256KB | 247MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=65G --rw=randread |
+| sequential | 256KB | 434MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=256k --io_size=70G --rw=read |
+| random | 512KB | 279MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=randread |
+| sequential | 512KB | 417MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=read |
+| random | 1024KB | 297MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=70G --rw=randread |
+| sequential | 1024KB | 533MB/s | fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=1024k --io_size=80G --rw=read |
 
 ### 分析
 
 基本结论还是可以做出来的
 
-1. SSD下，同一block size，对于throughput，顺序读比随机读有优势。在block size小时（小于或等于16k），是一倍的关系。感觉上，sequential好像是预先读出（因为SSD内部也有SDRAM的cache），因此加快。
+1. random和sequential的对比：同一block size，对于throughput，顺序读比随机读有优势。在block size小时（小于或等于128k），是一倍的关系。在bs > 128k，也是sequential比random要更好一些。感觉上，sequential好像是预先读出（因为SSD内部也有SDRAM的cache），因此加快。
 
-2. block size越大，则throughput越大，block size小时（小于或等于16k），block size大一倍，throughput也接近一倍。最大block size，i.e., 1024k，相比最小的block size，i.e., 4k，其throughput相比可以几十倍的差别。 这比较符合SSD的工作原理，即并发导致高速（parallelism for performance），而block size比较高时，利于SSD内部做并发。而block size到了64k以上时，并发的边际效应开始降低。
+2. 单个模式下block size变化规律：block size越大，则throughput越大，block size小时（小于或等于64k），block size大一倍，throughput也接近一倍。最大block size，i.e., 1024k，相比最小的block size，i.e., 4k，其throughput相比可以80倍的差别，i.e., random模式下bs=4k vs bs=1024k。 这比较符合SSD的工作原理，即并发导致高速（parallelism for performance），而block size比较高时，利于SSD内部做并发。而block size到了64k以上时，并发的边际效应开始降低。
 
 3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，比较高，在k级别。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。
 
-4. SSD的性能表现不是很稳定，每次测试值都有偏差。即使我们采用5分钟以上的运行时间，这个差别仍存在。20%的差别是很正常的。甚至有时接近倍数的差别。不过，从统计上看，如果足够多的次数，那么出现概率较高的throughput，还是相对稳定。不稳定的因素不明，只能怀疑是SSD内部的算法，比如：SSD内部的cache的管理。
+4. 对于同一mode以及某固定block size, SSD的性能表现不是很稳定，每次测试值都有偏差。即使我们采用5分钟以上的运行时间，这个差别仍存在。20%的差别是很正常的。甚至有时几倍数的差别（可以看fio的disk utilization这个参数，越高越容易获得高的throughput，但这个参数的意义以及和哪些东西相关，不明）。不过，从统计上看，如果足够多的次数，那么出现概率较高的throughput，还是相对稳定。不稳定的因素不明，只能怀疑是SSD内部的算法，比如：SSD内部的cache的管理。
 
 ## iodepth的影响
 
