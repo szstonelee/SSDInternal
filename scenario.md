@@ -256,7 +256,7 @@ Throughput = 11.3MB/s, IOPS = 2768
 
 2. 对于sequential模式，iodepth有一定的影响，比如：iodepth=4时，是iodepth=1的几乎3倍。如果用SSD内部的cache去解释，似乎可以解释得通（包括对比random模式）。
 
-## read multi thread vs io depth
+## read multi thread 以及 io depth
 
 ### WiscKey里的测试
 
