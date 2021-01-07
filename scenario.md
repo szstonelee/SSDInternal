@@ -162,7 +162,7 @@ fio --name=test --filename=tfile --rw=read --io_size=200M --ioengine=sync --bs=4
 
 # 纯Read
 
-## 基本Read
+## 基本Read：单线程，同步
 
 我们用最基本的read，即ioengine=sync，同时不受page cache影响，所以direct=1。然后比较随机读rw=randread，以及顺序读rw=read，比较block size在不同值下的throughput.
 
@@ -216,7 +216,7 @@ for i in {1..5}; do <command>; done
 
 4. 对于同一mode以及某固定block size, SSD的性能表现不是很稳定，每次测试值都有偏差。即使我们采用5分钟以上的运行时间，这个差别仍存在。20%的差别是很正常的。甚至有时几倍数的差别（可以看fio的disk utilization这个参数，越高越容易获得高的throughput，但这个参数的意义以及和哪些东西相关，不明）。不过，从统计上看，如果足够多的次数，那么出现概率较高的throughput，还是相对稳定。不稳定的因素不明，只能怀疑是SSD内部的算法，比如：SSD内部的cache的管理。
 
-## block size = 4k时，iodepth的影响
+## read block size = 4k时，iodepth的影响
 
 ### 测试结果
 
@@ -250,11 +250,14 @@ Throughput = 11.3MB/s, IOPS = 2768
 
 ### 分析
 
-我们只测试了block size=4k，如果block size比较大时，那么iodepth的影响会降低甚至没有。
+我们只测试了block size=4k。
 
 1. 对于random模式，iodepth的影响不大，可以认为接近于0。注：采用了并发模式，--numjobs=16 --group_reporting，结果差不多。
 
 2. 对于sequential模式，iodepth有一定的影响，比如：iodepth=4时，是iodepth=1的几乎3倍。如果用SSD内部的cache去解释，似乎可以解释得通（包括对比random模式）。
+
+
+下面会有其他情况下的测试，包括：block size不止4k， iodepth和线程数的同时影响。
 
 ## read multi thread 以及 io depth
 
@@ -262,13 +265,13 @@ Throughput = 11.3MB/s, IOPS = 2768
 
 [对这篇文章 WiscKey- Separating Keys from Values in SSD-conscious Storage， Figure3](https://www.usenix.org/system/files/conference/fast16/fast16-papers-lu.pdf)，里面的东西有所怀疑，因为从图示分析得到下面三点，
 
-1. sequential在block size从小到大时，throughput几乎无变化。有两种可能，其一，就是queued depth很大，这样小的block size即使咋单线程下，也可以因为queue汇合成大的block size；但注意：我的Mac上的SSD没有这个特性，也是其他企业级的SSD如此；其二，就是多线程效果，这样并发的请求达到和同样的效果。
+1. sequential在block size从小到大时，throughput几乎无变化。有两种可能，其一，就是queued depth很大，这样小的block size即使咋单线程下，也可以因为queue汇合成大的block size；但注意：我的Mac上的SSD没有这个特性，也许其他企业级的SSD如此；其二，就是多线程效果，这样并发的请求达到和同样的效果。
 
 2. random read随着block size增大，不管是单线程，还是多线程，都是增大的。但多线程，有进一步放大的效果。在一定线程数和不太大的block size下，对于random read，也可以达到和sequential read一样的最高的throughput。图中单线程只到block size=256K这种情况，其throughput也达到最大值的近60%，如果能到block size=1M，怀疑能接近最大的带宽。
 
 3. 多线程的因素，到底是多线程，还是io任务队列足够多（需要做单线程多io任务， 和多线程的比较）
 
-但我自己的验证没有这样的结果稍微有些不同，见下表
+但我自己的验证有些不同，见下表
 
 ### 我自己Mac测试情况
 
@@ -294,9 +297,9 @@ Throughput = 11.3MB/s, IOPS = 2768
 
 结论:
 
-1. 当threads=1时，和上面的sync read比，差别不大，i.e., iodepth不是很起作用，反而是block size起作用。
+1. 当threads=1时，iodetpht=1, 这里所用的libaio，和上面的sync read比，差别不大。
 
-2. 对于threads=32，block size = 4k 和 16k，性能相比threads=1，没有什么区别。到64K才开始有效，大概是一倍的的提升。
+2. iodepth和thraeds，都起一定作用，即利于SSD并发从而得到更好的性能。
 
 ### 网上一个Samsung SSD的测试报告
 
