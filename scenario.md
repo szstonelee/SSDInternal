@@ -259,7 +259,7 @@ Throughput = 11.3MB/s, IOPS = 2768
 
 下面会有其他情况下的测试，包括：block size不止4k， iodepth和线程数的同时影响。
 
-## read multi thread 以及 io depth
+## random read multi thread 以及 io depth
 
 ### WiscKey里的测试
 
@@ -321,7 +321,9 @@ Throughput = 11.3MB/s, IOPS = 2768
 
 # 纯Write
 
-## 命令说明
+## 基本Write：单线程，同步
+
+### 命令说明
 
 因为是Log，所以，我们可以确定是sequential，--rw=write，同时，我们只考虑经过os page cache的writeback写，i.e., --direct=0
 
@@ -340,9 +342,9 @@ NOTE:
 
 3. 如果测试时间比较短（只有几十秒），请用多次```for i in {1..5}; do <command>; done```，然后最高频率的throughput作为其结果
 
-我们主要测试，不同block size下，fsync是0（不发出）,1或其他值的情况
+我们主要测试，不同block size下，fsync是0（不发出）,1（相当于sync）或其他值（相当于batch commit）的情况
 
-## 测试结果
+### 测试结果
 
 | bs | fsync | Tp | fio command |
 | :-: | :-: | -- | -- |
@@ -377,7 +379,7 @@ NOTE:
 | 1024k | 0 | 273M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=12G --fsync=0 --bs=1024k |
 | 1024k | 1 | 239M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=1 --bs=1024k |
 
-## 对比一下libaio
+### 对比一下libaio
 
 只考虑block size=4k，同时只是最后用sync，i.e., fsync=0(direct=1) and end_fsync=1。
 
@@ -398,6 +400,26 @@ NOTE:
 3. 当fsync=1时，当bs比较大，比如512k, 1024k时，其写盘速度和最大带宽差别不大，因为当bs比较大时，SSD的并发优势将会被充分利用到。同时，这也给设计带来一个技巧，就是batch write。收集一批小的写，然后集中后用一个比较大的block size写入，这时，其性能基本是最大值，和OS page cache的效果差不多。
 
 4. 当bs比较小时，如4k，比较fsync的值从1到8，发现其对应的throughput也几乎是50%-100%的增加。这也意味当小的写操作时，batch操作将会很好地利用到带宽。这也是很多数据库写盘操作里推崇batch的原因。
+
+## 多线程和io dpeth下的Write
+
+由于是RocksDB，我们只考虑block szie = 1024k的情况 (以下做5次，取中间值)
+
+| threads | io depth | throughtput | command |
+| -- | -- | -- | -- |
+| 1 | 1 | 167MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=1 --thread --group_reporting |
+| 1 | 32 | 213MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=32 --numjobs=1 --thread --group_reporting |
+| 2 | 1 | 321MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=2 --thread --group_reporting |
+| 2 | 32 | 366MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=32 --numjobs=2 --thread --group_reporting |
+| 4 | 1 | 591MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=4 --thread --group_reporting |
+| 4 | 32 | 637MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=32 --numjobs=4 --thread --group_reporting |
+| 16 | 1 | 1476MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=16 --thread --group_reporting |
+| 16 | 4 | 1653MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=4 --numjobs=16 --thread --group_reporting |
+| 32 | 1 | 2345MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=1 --numjobs=32 --thread --group_reporting |
+| 32 | 4 | 2197MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=4 --numjobs=32 --thread --group_reporting |
+| 32 | 32 | 1376MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=32 --numjobs=32 --thread --group_reporting |
+| 64 | 1 | 2340MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=1 --numjobs=64 --thread --group_reporting |
+
 
 # Write mix with Read 
 
