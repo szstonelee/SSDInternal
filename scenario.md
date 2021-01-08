@@ -431,6 +431,7 @@ NOTE:
 | 4 | 1 | 189MB/s | fio --name=w  --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=4G --io_size=4G --bs=1024k --iodepth=1 --numjobs=4 --thread --group_reporting |
 | 4 | 2 | 199MB/s | fio --name=w  --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=4G --io_size=4G --bs=1024k --iodepth=2 --numjobs=4 --thread --group_reporting |
 | 8 | 1 | 231MB/s | fio --name=w  --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=3G --io_size=1G --bs=1024k --iodepth=1 --numjobs=8 --thread --group_reporting |
+| 8 | 4 | 193MB/s | fio --name=w  --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=3G --io_size=1G --bs=1024k --iodepth=4 --numjobs=8 --thread --group_reporting |
 | 16 | 1 | 187MB/s | fio --name=w  --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=1500M --io_size=2G --bs=1024k --iodepth=1 --numjobs=16 --thread --group_reporting |
 
 
