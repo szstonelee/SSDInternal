@@ -301,6 +301,23 @@ Throughput = 11.3MB/s, IOPS = 2768
 
 2. iodepth和thraeds，都起一定作用，即利于SSD并发从而得到更好的性能。
 
+突然有一个怀疑，throughput可以这么容易到GB/s量级吗？有一种可能就是tfile虽然近3G，但还是太小，假设SSD的内部cache也是1-3G的话，可以buffer33%-100%的文件，这样，就很容易大部分请求都hit到SSD的cache。这时如果请求频率很小（block size够大，同时结合交大的iodepth或threads），就可以得到很大的throughput。所以，做个测试，将tfile用```cat tfile >> total```，让total成为一个比较大的文件，达到24G，从而降低SSD cache的hit rate，然后看看读total的性能是如何。
+
+| bs | threads | iodepth | throughtput | command |
+| 64k |  1 | 32 | 159MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=64k --io_size=15G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
+| 64k | 32 | 32 | 163MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=64k --io_size=1G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting | 
+| 256k | 1 | 32 | 436MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=256k --io_size=15G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
+| 256k | 32 | 32 | 405MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=256k --io_size=3G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
+| 1024k | 1 | 32 | 792MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=1024k --io_size=50G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
+| 1024k | 32 | 32 | 829MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=1024k --io_size=5G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
+
+新的结论：
+
+1. 如果读的文件很大（total = 24G），相比(tfile = 2.6G)，大部分时候，throghput都降低到1/3 - 1/2，但也有个别参数差别不大。
+
+2. 即使是1/3，也有最大可以到800MB/s。注意：这是RandomRead，所以性能还是相当不错的。
+
+
 ### 网上一个Samsung SSD的测试报告
 
 另外还有一个测试报告，[Samsung 960 Pro](https://www.anandtech.com/show/10754/samsung-960-pro-ssd-review)。
@@ -434,6 +451,7 @@ NOTE:
 | 8 | 4 | 193MB/s | fio --name=w  --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=3G --io_size=1G --bs=1024k --iodepth=4 --numjobs=8 --thread --group_reporting |
 | 16 | 1 | 187MB/s | fio --name=w  --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=1500M --io_size=2G --bs=1024k --iodepth=1 --numjobs=16 --thread --group_reporting |
 
+我们发现当用多个文件，让每个线程都独立处理自己的文件时，写入的速度没有那么快（i.e.，到夸张的GB/s），还是普通的200M上下。这才是SSD真实的写的最高性能（block size很大，同时还有多线程，iodepth也可以有多个）。
 
 补充：我们看一下block size是1M，但是random write的情况：
 
