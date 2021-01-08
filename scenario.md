@@ -155,14 +155,14 @@ fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --
 
 如果我们增加设置invaliddate，如下
 ```
-fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 \
---invalidate=0
+fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0
 ```
 就会发现throughput=2GB/s左右。这是因为基本都是从内存读到数据（我们之前有做热身）
 
 上面那个page cache能有效，是因为randread两次执行的随机数时一样的，如果我们设置不同的随机数，i.e., --randrepeat=0，我们会发现page cache的作用没了
 ```
-fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0 --randrepeat=0
+fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0 \
+--randrepeat=0
 ```
 
 如果将随机读改为顺序读（同时不启用page cache），命令如下
