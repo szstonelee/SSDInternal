@@ -408,6 +408,7 @@ NOTE:
 | threads | io depth | throughtput | command |
 | -- | -- | -- | -- |
 | 1 | 1 | 167MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=1 --thread --group_reporting |
+| 1 | 4 | 199MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=4 --numjobs=1 --thread --group_reporting |
 | 1 | 32 | 213MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=32 --numjobs=1 --thread --group_reporting |
 | 2 | 1 | 321MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=2 --thread --group_reporting |
 | 2 | 32 | 366MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=32 --numjobs=2 --thread --group_reporting |
@@ -419,6 +420,16 @@ NOTE:
 | 32 | 4 | 2197MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=4 --numjobs=32 --thread --group_reporting |
 | 32 | 32 | 1376MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=32 --numjobs=32 --thread --group_reporting |
 | 64 | 1 | 2340MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=1 --numjobs=64 --thread --group_reporting |
+
+补充：我们看一下block size是1M，但是random write的情况：
+
+| threads | io depth | throughtput | command |
+| -- | -- | -- | -- |
+| 1 | 1 | 155MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=1 --thread --group_reporting |
+| 1 | 4 | 198MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=4 --numjobs=1 --thread --group_reporting |
+| 4 | 4 | 176MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=20G --bs=1024k --iodepth=4 --numjobs=4 --thread --group_reporting |
+| 8 | 1 | 169MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=7G --bs=1024k --iodepth=1 --numjobs=8 --thread --group_reporting |
+| 8 | 4 | 169MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=7G --bs=1024k --iodepth=4 --numjobs=8 --thread --group_reporting |
 
 
 # Write mix with Read 
