@@ -422,6 +422,16 @@ NOTE:
 | 32 | 32 | 1376MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=32 --numjobs=32 --thread --group_reporting |
 | 64 | 1 | 2340MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=1 --numjobs=64 --thread --group_reporting |
 
+以上数据惊人，throughput甚至达到了GB/s级别，而且全部和thread数量增加相关。有个怀疑是：其实多线程写，是多线程操作SSD内部的SDRAM，即第一个线程顺序写文件，留下了很多cache在SSD内部的SDRAM里，后面的线程利用了这个cache，虽然还需要再写一遍，但由于是同一文件同一位置，所以速度可以大大提高（甚至可以优化成0写）。
+
+所以，做个修正，让每个线程写不同的文件，然后并发线程，看效果如何，见下表
+
+| threads | io depth | throughtput | command |
+| -- | -- | -- | -- |
+| 4 | 1 | 189MB/s | fio --name=w  --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=4G --io_size=10G --bs=1024k --iodepth=1 --numjobs=4 --thread --group_reporting |
+| 4 | 4 | yyy | fio --name=w  --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=4G --io_size=10G --bs=1024k --iodepth=4 --numjobs=4 --thread --group_reporting |
+
+
 补充：我们看一下block size是1M，但是random write的情况：
 
 | threads | io depth | throughtput | command |
