@@ -304,6 +304,7 @@ Throughput = 11.3MB/s, IOPS = 2768
 突然有一个怀疑，throughput可以这么容易到GB/s量级吗？有一种可能就是tfile虽然近3G，但还是太小，假设SSD的内部cache也是1-3G的话，可以buffer33%-100%的文件，这样，就很容易大部分请求都hit到SSD的cache。这时如果请求频率很小（block size够大，同时结合交大的iodepth或threads），就可以得到很大的throughput。所以，做个测试，将tfile用```cat tfile >> total```，让total成为一个比较大的文件，达到24G，从而降低SSD cache的hit rate，然后看看读total的性能是如何。
 
 | bs | threads | iodepth | throughtput | command |
+| -- | -- | -- | -- | -- |
 | 64k |  1 | 32 | 159MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=64k --io_size=15G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
 | 64k | 32 | 32 | 163MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=64k --io_size=1G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting | 
 | 256k | 1 | 32 | 436MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=256k --io_size=15G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
