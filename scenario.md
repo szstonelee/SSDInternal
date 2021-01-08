@@ -33,7 +33,7 @@ cat /sys/block/<your block device name>/queue/scheduler
 none [mq-deadline]
 ```
 
-我们需要将之改为none模式的IO Scheduler。因为是虚拟机，所以没有用比较适合SSD的none模式
+我们需要将之改为none模式的IO Scheduler，选用比较适合SSD的none模式。
 ```
 sudo -i
 echo none > /sys/block/<your block device name>/queue/scheduler
@@ -107,9 +107,13 @@ curl <URI> -o tfile
 
 同时发现，如果文件过小（比如百兆大小文件针对G量级文件），有1倍的数据差异。所以，建议部署接近Production的数据量，比如针对Rocksdb，部署多个文件，总量可达TB级别，参考fio的Target file/device的相关说明。
 
-## read & direct & invalidate
+## direct in fio 
 
-对于read，如果direct=1，那么page cache将不启作用。如果direct=0，但invalidate=1，那么page cache的作用是零
+如果direct=1，不管是read还是write，那么page cache将不启作用（write bypass page cache同时，会让相应的page失效）。
+
+如果direct=0，很复杂。还有两个参数可能影响，[一个是invalidate，一个是pre_read](https://fio.readthedocs.io/en/latest/fio_man.html#cmdoption-arg-invalidate)
+
+下面的测试中，如果我们不想使用page cache，direct总是1。但如果我们想看page cache的write back功能，我们设置direct = 0，一般同时[fsync = 0](https://fio.readthedocs.io/en/latest/fio_man.html#cmdoption-arg-fsync)（也偶尔测试批sync的）
 
 ### 清page cache
 
@@ -124,7 +128,7 @@ sync; echo 1 > /proc/sys/vm/drop_caches
 cat /proc/meminfo | grep Cached
 ```
 
-然后看```Cached:```这一项，如果只有很少的数量，比如几十M，那么就说明page cache已经清楚干净了
+然后看```Cached:```这一项，如果只有很少的数量，比如几十M，那么就说明page cache已经清除干净了
 
 ### page cache的热身
 
@@ -154,6 +158,12 @@ fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --
 fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0
 ```
 就会发现throughput=2GB/s左右。这是因为基本都是从内存读到数据（我们之前有做热身）
+
+上面那个page cache能有效，是因为randread两次执行的随机数时一样的，如果我们设置不同的随机数，i.e., --randrepeat=0，我们会发现page cache的作用没了
+```
+fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0 --randrepeat=0
+```
+
 如果将随机读改为顺序读（同时不启用page cache），命令如下
 ```
 fio --name=test --filename=tfile --rw=read --io_size=200M --ioengine=sync --bs=4k --direct=1
