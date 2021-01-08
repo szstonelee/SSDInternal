@@ -428,6 +428,7 @@ NOTE:
 | -- | -- | -- | -- |
 | 1 | 1 | 155MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=1 --thread --group_reporting |
 | 1 | 4 | 198MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=4 --numjobs=1 --thread --group_reporting |
+| 4 | 1 | 182MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=20G --bs=1024k --iodepth=1 --numjobs=4 --thread --group_reporting |
 | 4 | 4 | 176MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=20G --bs=1024k --iodepth=4 --numjobs=4 --thread --group_reporting |
 | 8 | 1 | 169MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=7G --bs=1024k --iodepth=1 --numjobs=8 --thread --group_reporting |
 | 8 | 4 | 169MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=7G --bs=1024k --iodepth=4 --numjobs=8 --thread --group_reporting |
