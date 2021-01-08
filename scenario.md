@@ -413,6 +413,7 @@ NOTE:
 | 2 | 1 | 321MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=2 --thread --group_reporting |
 | 2 | 32 | 366MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=32 --numjobs=2 --thread --group_reporting |
 | 4 | 1 | 591MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=4 --thread --group_reporting |
+| 4 | 4 | 647MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=4 --numjobs=4 --thread --group_reporting |
 | 4 | 32 | 637MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=32 --numjobs=4 --thread --group_reporting |
 | 16 | 1 | 1476MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=16 --thread --group_reporting |
 | 16 | 4 | 1653MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=4 --numjobs=16 --thread --group_reporting |
