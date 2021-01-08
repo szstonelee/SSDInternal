@@ -155,7 +155,8 @@ fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --
 
 如果我们增加设置invaliddate，如下
 ```
-fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0
+fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 \
+--invalidate=0
 ```
 就会发现throughput=2GB/s左右。这是因为基本都是从内存读到数据（我们之前有做热身）
 
