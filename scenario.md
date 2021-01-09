@@ -179,19 +179,15 @@ fio --name=test --filename=tfile --rw=read --io_size=200M --ioengine=sync --bs=4
 
 ### 测试注意
 
-如果我们尝试将bs改为其他值，包括8k, 16k, 32k，64k，然后比较随机读和顺序读，我们得到下表
-
-NOTE: 
-1. 测试文件大些，如果测试文件过小，或者用了比较小的size值，会导致throughput明显过高（可达1倍）。如上文，测试文件最好是安装包等有压缩数据的文件，也比较真实模拟生产环境。
-
-2. 我们的测试时间需要足够长，至少5分钟以上，否则，请修改io_size参数。如果时间过短，SSD内部的缓存可能起很大作用，有时结果会有2倍的差别。
-
-3. 如果用小的文件tfile(2.6G），建议多测几次，取中间值或概率较多的值。即使每次几分钟，每次的值都有不同，最低和最高有时接近100%的差别（这个不稳定让人疑惑）。如果用大文件total(24G)，这个就稳定很多。
+1. 我们的测试时间需要足够长，至少分钟以上，否则，请修改io_size参数。同时多次，避免一次的偶然。从测试数据看，每次测试还是有一定的偏差，但多次后，相对稳定。
 
 如果想多测试几次，可以用下面的shell命令
 ```
 for i in {1..5}; do <command>; done
 ```
+
+2. 测试文件大小有一定作用。如果用小的文件tfile(2.6G），偏差会比较大，有时会到1倍的差别。如果用大文件total(24G)，这个就相对稳定很多（但也偶尔看见50%的差别）。
+
 ### 测试结果
 
 | mode | bs | Tp | fio command |
@@ -217,15 +213,11 @@ for i in {1..5}; do <command>; done
 
 ### 分析
 
-基本结论还是可以做出来的
-
 1. random和sequential的对比：同一block size，对于throughput，顺序读比随机读有优势。在block size小时（小于或等于64k），是一倍的关系。在bs > 128k，也是sequential比random要更好一些。感觉上，sequential好像是预先读出（因为SSD内部也有SDRAM的cache），因此加快。
 
 2. 单个模式下block size变化规律：block size越大，则throughput越大，block size小时（小于或等于64k），block size大一倍，throughput也接近一倍。最大block size，i.e., 1024k，相比最小的block size，i.e., 4k，其throughput相比可以70倍的差别，i.e., random或sequential模式下bs=4k vs bs=1024k。 这比较符合SSD的工作原理，即并发导致高速（parallelism for performance），而block size比较高时，利于SSD内部做并发。而block size到了128k以上时，并发的边际效应开始降低。
 
 3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，比较高，在k级别。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。
-
-4. 如果测试的文件过小，比如用2.6G的tfile，一些测试会导致个别数据及其不稳定，甚至出现倍数的差别。但如果换成24G的total，那么相对稳定。所以，尽量用大文件测试，同时测多次，取中值。
 
 ## random read multi thread 以及 io depth
 
