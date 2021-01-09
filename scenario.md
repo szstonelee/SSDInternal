@@ -213,62 +213,19 @@ for i in {1..5}; do <command>; done
 | random | 512KB | 310MB/s | fio --name=t --filename=total --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=randread --randrepeat=0 |
 | sequential | 512KB | 393MB/s | fio --name=t --filename=total --ioengine=sync --direct=1 --bs=512k --io_size=70G --rw=read |
 | random | 1024KB | 643MB/s | fio --name=t --filename=total --ioengine=sync --direct=1 --bs=1024k --io_size=70G --rw=randread --randrepeat=0 |
-| sequential | 1024KB | 469MB/s | fio --name=t --filename=total --ioengine=sync --direct=1 --bs=1024k --io_size=80G --rw=read |
+| sequential | 1024KB | 725MB/s | fio --name=t --filename=total --ioengine=sync --direct=1 --bs=1024k --io_size=70G --rw=read |
 
 ### 分析
 
 基本结论还是可以做出来的
 
-1. random和sequential的对比：同一block size，对于throughput，顺序读比随机读有优势。在block size小时（小于或等于64k），是一倍的关系。在bs > 128k，也是sequential比random要更好一些(50%左右的提高)。感觉上，sequential好像是预先读出（因为SSD内部也有SDRAM的cache），因此加快。
+1. random和sequential的对比：同一block size，对于throughput，顺序读比随机读有优势。在block size小时（小于或等于64k），是一倍的关系。在bs > 128k，也是sequential比random要更好一些。感觉上，sequential好像是预先读出（因为SSD内部也有SDRAM的cache），因此加快。
 
-2. 单个模式下block size变化规律：block size越大，则throughput越大，block size小时（小于或等于64k），block size大一倍，throughput也接近一倍。最大block size，i.e., 1024k，相比最小的block size，i.e., 4k，其throughput相比可以20-30倍的差别，i.e., random或sequential模式下bs=4k vs bs=1024k。 这比较符合SSD的工作原理，即并发导致高速（parallelism for performance），而block size比较高时，利于SSD内部做并发。而block size到了128k以上时，并发的边际效应开始降低。
+2. 单个模式下block size变化规律：block size越大，则throughput越大，block size小时（小于或等于64k），block size大一倍，throughput也接近一倍。最大block size，i.e., 1024k，相比最小的block size，i.e., 4k，其throughput相比可以70倍的差别，i.e., random或sequential模式下bs=4k vs bs=1024k。 这比较符合SSD的工作原理，即并发导致高速（parallelism for performance），而block size比较高时，利于SSD内部做并发。而block size到了128k以上时，并发的边际效应开始降低。
 
 3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，比较高，在k级别。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。
 
-4. 对于同一mode以及某固定block size, SSD的性能表现不是很稳定，每次测试值都有偏差。即使我们采用5分钟以上的运行时间，这个差别仍存在。20%的差别是很正常的。甚至有时几倍数的差别（可以看fio的disk utilization这个参数，越高越容易获得高的throughput，但这个参数的意义以及和哪些东西相关，不明）。不过，从统计上看，如果足够多的次数，那么出现概率较高的throughput，还是相对稳定。不稳定的因素不明，只能怀疑是SSD内部的算法，比如：SSD内部的cache的管理。
-
-## read block size = 4k时，iodepth的影响
-
-### 测试结果
-
-我们测试iodepth的影响，因此，ioengine需要用libaio，同时必须保证direct=1，否则libaio没有用。
-
-io depth == --iodepth; io batch == --iodepth_batch, bs == bs or block size, Tp == throughput
-
-| mode | io depth | io batch | bs | Tp | fio command |
-| --- | ----- | -- | -------- | -------- | --- |
-| random | 1 | 1 | 4K | 10MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=1 |
-| random | 2 | 1 | 4K | 13MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=2 |
-| random | 4 | 1 | 4K | 14MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 |
-| random | 4 | 4 | 4K | 12MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=4 --iodepth_batch=4 |
-| random | 32 | 1 | 4K | 15MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=32  |
-| random | 32 | 8 | 4K | 13MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=randread --iodepth=32 --iodepth_batch=8 |
-| sequential | 1 | 1 | 4K | 16MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=5G --rw=read --iodepth=1 |
-| sequential | 2 | 1 | 4K | 27MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=2 |
-| sequential | 4 | 1 | 4K | 39MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 |
-| sequential | 4 | 4 | 4K | 46MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=10G --rw=read --iodepth=4 --iodepth_batch=4 |
-
-并发(multi process or multi thread)情况下的结果
-```
-fio --name=t --filename=tfile --ioengine=sync --direct=1 --bs=4k --io_size=500M --rw=randread --iodepth=16 --numjobs=16 --group_reporting
-```
-Throughput = 12.4MB/s, IOPS = 3016
-
-```
-fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=500M --rw=randread --iodepth=16 --numjobs=16 --group_reporting
-```
-Throughput = 11.3MB/s, IOPS = 2768
-
-### 分析
-
-我们只测试了block size=4k。
-
-1. 对于random模式，iodepth的影响不大，可以认为接近于0。注：采用了并发模式，--numjobs=16 --group_reporting，结果差不多。
-
-2. 对于sequential模式，iodepth有一定的影响，比如：iodepth=4时，是iodepth=1的几乎3倍。如果用SSD内部的cache去解释，似乎可以解释得通（包括对比random模式）。
-
-
-下面会有其他情况下的测试，包括：block size不止4k， iodepth和线程数的同时影响。
+4. 如果测试的文件过小，比如用2.6G的tfile，一些测试会导致个别数据及其不稳定，甚至出现倍数的差别。但如果换成24G的total，那么相对稳定。所以，尽量用大文件测试，同时测多次，取中值。
 
 ## random read multi thread 以及 io depth
 
@@ -290,8 +247,8 @@ Throughput = 11.3MB/s, IOPS = 2768
 
 | bs | threads | iodepth | throughtput | command |
 | -- | -- | -- |  -- | -- |
-| 4k | 1 | 1 | 10.5MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=1G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting |
-| 4k | 1 | 32 | 16.8MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=1G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
+| 4k | 1 | 1 | 10.8MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=4k --io_size=1G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting --randrepeat=0 |
+| 4k | 1 | 32 | x16.8MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=4k --io_size=1G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting --randrepeat=0 |
 | 4k | 32 | 32 | 20.3MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=100M --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
 | 16k | 1 | 1 | 34.5MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=16k --io_size=4G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting |
 | 16k | 1 | 32 | 58.6MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=16k --io_size=4G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
