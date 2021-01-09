@@ -248,20 +248,25 @@ for i in {1..5}; do <command>; done
 | bs | threads | iodepth | throughtput | command |
 | -- | -- | -- |  -- | -- |
 | 4k | 1 | 1 | 10.8MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=4k --io_size=1G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting --randrepeat=0 |
-| 4k | 1 | 32 | x16.8MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=4k --io_size=1G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting --randrepeat=0 |
-| 4k | 32 | 32 | 20.3MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=4k --io_size=100M --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
-| 16k | 1 | 1 | 34.5MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=16k --io_size=4G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting |
-| 16k | 1 | 32 | 58.6MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=16k --io_size=4G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
-| 16k | 32 | 32 | 77.4MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=16k --io_size=400M --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
-| 64k | 1 | 1 | 115MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=64k --io_size=16G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting |
-| 64k | 1 | 32 | 195MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=64k --io_size=16G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
-| 64k | 32 | 32 | 368MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=64k --io_size=1600M --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
-| 256k | 1 | 1 | 233MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=256k --io_size=64G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting |
-| 256k | 1 | 32 | 442MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=256k --io_size=64G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
-| 256k | 32 | 32 | 1128MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=256k --io_size=7G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
-| 1024k | 1 | 1 | 264MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=1024k --io_size=128G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting |
-| 1024k | 1 | 32 | 1052MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=1024k --io_size=128G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting |
-| 1024k | 32 | 32 | 1976MB/s | fio --name=t --filename=tfile --ioengine=libaio --direct=1 --bs=1024k --io_size=15G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting |
+| 4k | 1 | 32 | 13.1MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=4k --io_size=1G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting --randrepeat=0 |
+| 4k | 32 | 1 | 13.6MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=4k --io_size=100M --rw=randread --iodepth=1 --numjobs=32 --thread --group_reporting --randrepeat=0 |
+| 4k | 32 | 32 | 13.4MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=4k --io_size=100M --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting --randrepeat=0 |
+| 16k | 1 | 1 | 39.7MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=16k --io_size=3G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting --randrepeat=0 |
+| 16k | 1 | 32 | 46.1MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=16k --io_size=4G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting --randrepeat=0 |
+| 16k | 32 | 1 | 45.6MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=16k --io_size=400M --rw=randread --iodepth=1 --numjobs=32 --thread --group_reporting --randrepeat=0 |
+| 16k | 32 | 32 | 46.6MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=16k --io_size=400M --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting --randrepeat=0 |
+| 64k | 1 | 1 | 134MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=64k --io_size=12G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting --randrepeat=0 |
+| 64k | 1 | 32 | 166MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=64k --io_size=16G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting --randrepeat=0 |
+| 64k | 32 | 1 | 164MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=64k --io_size=1G --rw=randread --iodepth=1 --numjobs=32 --thread --group_reporting --randrepeat=0 |
+| 64k | 32 | 32 | 175MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=64k --io_size=1G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting --randrepeat=0 |
+| 256k | 1 | 1 | 277MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=256k --io_size=20G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting --randrepeat=0 |
+| 256k | 1 | 32 | 380MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=256k --io_size=25G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting --randrepeat=0 |
+| 256k | 32 | 1 | 432MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=256k --io_size=2G --rw=randread --iodepth=1 --numjobs=32 --thread --group_reporting --randrepeat=0 |
+| 256k | 32 | 32 | 401MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=256k --io_size=2G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting --randrepeat=0 |
+| 1024k | 1 | 1 | 534MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=1024k --io_size=40G --rw=randread --iodepth=1 --numjobs=1 --thread --group_reporting --randrepeat=0 |
+| 1024k | 1 | 32 | 762MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=1024k --io_size=50G --rw=randread --iodepth=32 --numjobs=1 --thread --group_reporting --randrepeat=0 |
+| 1024k | 32 | 1 | 836MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=1024k --io_size=4G --rw=randread --iodepth=1 --numjobs=32 --thread --group_reporting --randrepeat=0 |
+| 1024k | 32 | 32 | 775MB/s | fio --name=t --filename=total --ioengine=libaio --direct=1 --bs=1024k --io_size=4G --rw=randread --iodepth=32 --numjobs=32 --thread --group_reporting --randrepeat=0 |
 
 结论:
 
