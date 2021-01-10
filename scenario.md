@@ -315,40 +315,65 @@ NOTE:
 
 ### 测试结果
 
-| bs | fsync | Tp | fio command |
-| :-: | :-: | -- | -- |
-| 4k | 0 | 288M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=4k |
-| 4k | 1 | 5M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=1G --fsync=1 --bs=4k |
-| 4k | 2 | 10M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=2G --fsync=2 --bs=4k |
-| 4k | 4 | 15M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=3G --fsync=4 --bs=4k | 
-| 4k | 8 | 27M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=6G --fsync=8 --bs=4k |
-| 8k | 0 | 284M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=8k |
-| 8k | 1 | 9M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=2G --fsync=1 --bs=8k |
-| 8k | 2 | 15M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=5G --fsync=2 --bs=8k |
-| 8k | 4 | 29M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=5G --fsync=4 --bs=8k |
-| 8k | 8 | 34M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=8 --bs=8k |
-| 16k | 0 | 257M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=16k |
-| 16k | 1 | 16M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=4G --fsync=1 --bs=16k |
-| 16k | 2 | 18M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=2 --bs=16k |
-| 16k | 4 | 35M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=4 --bs=16k |
-| 16k | 8 | 75M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=8 --bs=16k |
-| 32k | 0 | 255M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=32k |
-| 32k | 1 | 22M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=5G --fsync=1 --bs=32k |
-| 32k | 2 | 35M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=2 --bs=32k |
-| 32k | 4 | 63M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=4 --bs=32k |
-| 64k | 0 | 262M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=64k |
-| 64k | 1 | 39M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=1 --bs=64k |
-| 64k | 2 | 66M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=2 --bs=64k |
-| 128k | 0 | 269M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=128k |
-| 128k | 1 | 77M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=1 --bs=128k |
-| 256k | 0 | 259M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=256k |
-| 256k | 1 | 164M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=1 --bs=256k |
-| 512k | 0 | 275M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=7G --fsync=0 --bs=512k |
-| 512k | 1 | 211M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=1 --bs=512k |
-| 1024k | 0 | 273M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=12G --fsync=0 --bs=1024k |
-| 1024k | 1 | 239M/s | fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=1 --bs=1024k |
+NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文件，会导致一些数据失真。
 
-1. 当fysnc=0时，bs从4k到1024k,Throughput都差别不大，都是近300M。这意味写盘都先到page cache里，然后由os来write back。一般而言，都是接近磁盘的写的最大带宽。
+#### fsync = 0
+
+| bs | throughput | fio command |
+| -- | -- | -- |
+| 4k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=4k; |
+| 8k | 193MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=8k; | 
+| 16k | 196MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=16k; | 
+| 32k | 187MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=32k; | 
+| 64k | 193MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=64k; | 
+| 128k | 194MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=128k; | 
+| 256k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=256k; | 
+| 512k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=512k; | 
+| 1024k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=1024k; |
+
+#### fsync = 1
+
+| bs | throughput | fio command |
+| -- | -- | -- |
+| 4k | 2.6MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=200M --bs=4k; |
+| 8k | 5.7MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=300M --bs=8k; | 
+| 16k | 10.2MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=500M --bs=16k; | 
+| 32k | 21.6MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=1G --bs=32k; | 
+| 64k | 44.9MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=2G --bs=64k; | 
+| 128k | 76.4MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=4G --bs=128k; | 
+| 256k | 133MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=8G --bs=256k; | 
+| 512k | 175MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=15G --bs=512k; | 
+| 1024k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=17G --bs=1024k; |
+
+#### block = 4k, fsync = 1, 2, 4, 8, 16, 32, 64, 128
+
+| fsync | throughput | fio command |
+| -- | -- | -- |
+| 1 | 2.8MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=200M --bs=4k; |
+| 2 | 5.1MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=2 --end_fsync=1 --size=400M --bs=4k; |
+| 4 | 12.9MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=4 --end_fsync=1 --size=700M --bs=4k; |
+| 8 | 23.7MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=8 --end_fsync=1 --size=1500M --bs=4k; |
+| 16 | 35.6MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=16 --end_fsync=1 --size=3G --bs=4k; |
+| 32 | 81.9MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=32 --end_fsync=1 --size=5G --bs=4k; |
+| 64 | 120MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=64 --end_fsync=1 --size=8G --bs=4k; |
+| 128 | 168MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=128 --end_fsync=1 --size=10G --bs=4k; |
+
+#### block = 32k, fysnc = 1, 2, 4, 8, 16, 32, 64, 128
+
+| fsync | throughput | fio command |
+| -- | -- | -- |
+| 1 | 19.9MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=1G --bs=32k; |
+| 2 | 42.9MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=2 --end_fsync=1 --size=2G --bs=32k; |
+| 4 | 77.5MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=4 --end_fsync=1 --size=4G --bs=32k; |
+| 8 | 110MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=8 --end_fsync=1 --size=7G --bs=32k; |
+| 16 | 177MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=16 --end_fsync=1 --size=10G --bs=32k; |
+| 32 | 188MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=32 --end_fsync=1 --size=15G --bs=32k; |
+| 64 | 221MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=64 --end_fsync=1 --size=15G --bs=32k; |
+| 128 | 198MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=128 --end_fsync=1 --size=15G --bs=32k; |
+
+#### 分析
+
+1. 当fysnc=0时，bs从4k到1024k，throughput都差别不大，都是近300M。这意味写盘都先到page cache里，然后由os来write back。一般而言，都是接近磁盘的写的最大带宽。
 
 2. 当fsync=1时，是最慢的写盘操作。每一个bs写盘，都要flush & sync到SSD后才能继续。这相当于数据库系统里的每次写盘都sync的配置。是数据最安全的，但也是最慢的。其中，在4k，8k, 16k时，相比fsync=0或fsync!=0但bs=1024k的写盘，有几十倍的差别。很多数据库的页的大小，或者最小写盘单位，就是这三个单位。
 
