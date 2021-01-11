@@ -420,7 +420,7 @@ NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文�
 
 我们发现当用多个文件，让每个线程都独立处理自己的文件时，写入的速度没有那么快（i.e.，到夸张的GB/s），还是普通的200M上下。这才是SSD真实的写的最高性能（block size很大，同时还有多线程，iodepth也可以有多个）。
 
-### 附一：block size = 1024M, random write
+### 附一：block size = 1024k, random write
 
 补充：我们看一下block size是1M，但是random write的情况：
 
@@ -453,22 +453,22 @@ NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文�
 
 在没有写的影响，纯粹的随机读，参考上面的测试数据，throughput是10M/s左右，i.e.，IOPS是2K以上。
 
-在没有读的影响下，纯粹的顺序走page cache写，参考上面的测试数据，throughput是200-300M/s
+在没有读的影响下，纯粹的顺序走page cache写，参考上面的测试数据，throughput是200MB/s左右。
 
 然后，我们尝试下面的命令
 先启动随机读， bs=4k, 不走cache(direct=1)
 NOTE: [rfile来自一个不到1G的安装包](https://releases.ubuntu.com/20.04/)
 ```
-for i in {1..10}; do fio --name=r --filename=rfile --ioengine=sync --rw=randread --io_size=50M --bs=4k --direct=1; done
+for i in {1..50}; do fio --name=r --filename=total --ioengine=sync --rw=randread --io_size=10M --bs=4k --direct=1 --randrepeat=0; done
 ```
 紧跟着马上几乎同时启动顺序写，bs=1024k，走page cache, i.e., direct=0 & fsync=0
 ```
-for i in {1..30}; do fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=6G --fsync=0 --bs=1024k; done
+for i in {1..20}; do rm w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=12G --fsync=0 --bs=1024k; done
 ```
 
-我们发现，对于顺序走page cache的写，其throughput变化不太大。有时还在200-300M之间，有时就在100-200M之间。而且200-300M的概率要高于100-200M。最大值到了297M/s，最低到了130M/s。所以，估计也就30%的损失。
+我们发现，对于顺序走page cache的写，其throughput变化不太大，基本还是200MB/s上下。
 
-但对于随机读，并发时影响很大，大部分都在0.5M/s以下，最低时仅有0.2M/s。有接近50倍的差别。
+但对于随机读，就付出了代价。没有写时，是10MB/s。当加了写后，降低到100-200K/s，近100倍的降低。
 
 ## Write of page cache with random 1024k read
 
