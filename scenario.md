@@ -264,11 +264,9 @@ for i in {1..5}; do <command>; done
 
 1. 当threads=1时，iodetpht=1, 这里所用的libaio，和上面的sync read比，差别不大。
 
-2. 起决定性作用的，还是block size。
+2. 起决定性作用的，还是block size。然后多thread或多iodepth，略有增加（或并没有什么增加）。
 
-3. block size在64K以及之前，thread或iodepth，作用并不大。block size在这之后，有一定作用。
-
-4. 以上都是randomread，但在block size = 1024k时，不管是iodepth，还是多线程，其性能都可以和最上面的单线程同步顺序(sequential)的数据一个水准。
+3. 以上都是randomread，但在block size = 1024k时，不管是iodepth，还是多线程，其性能都可以和最上面的单线程同步顺序(sequential)的数据一个水准。
 
 ### 网上一个Samsung SSD的测试报告
 
@@ -371,9 +369,25 @@ NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文�
 | 64 | 221MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=64 --end_fsync=1 --size=15G --bs=32k; |
 | 128 | 198MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=128 --end_fsync=1 --size=15G --bs=32k; |
 
+#### randwrite with direct=0 and fsync=0
+
+| bs | throughtput | fio command |
+| -- | -- | -- |
+| 4k | 15.3MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=1G --bs=4k; |
+| 8k | 29.3MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=2G --bs=8k; |
+| 16k | 47.6MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=3G --bs=16k; |
+| 32k | 69.0MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=4G --bs=32k; |
+| 64k | 96.3MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=5G --bs=64k; |
+| 128k | 100MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=6G --bs=128k; |
+| 256k | 106MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=8G --bs=256k; |
+| 512k | 111MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=9G --bs=512k; |
+| 1024k | 115MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=10G --bs=1024k; |
+
 #### 分析
 
-1. 当fysnc=0时，bs从4k到1024k，throughput都差别不大，都是200M左右。这意味写盘都先到page cache里，然后由os来write back。一般而言，都是接近磁盘的写的最大带宽。
+1. 对于sequential write, 当fysnc=0时，bs从4k到1024k，throughput都差别不大，都是200M左右。这意味写盘都先到page cache里，然后由os来write back。一般而言，都是接近磁盘的写的最大带宽。
+
+2. 对于random write，当fsync=0而且direct=0(write back by OS page cache)时，并没有显示出如sequential那样的throughput，是个非常有趣的现象。？？？
 
 2. 当fsync=1时，是最慢的写盘操作。每一个bs写盘，都要flush & sync到SSD后才能继续。这相当于数据库系统里的每次写盘都sync的配置。是数据最安全的，但也是最慢的。其中，在4k，8k, 16k时，相比fsync=0或fsync!=0但bs=1024k的写盘，有几十倍甚至近百倍的差别。很多数据库的页的大小，或者最小写盘单位，就是这三个单位。
 
@@ -457,7 +471,7 @@ NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文�
 
 然后，我们尝试下面的命令
 先启动随机读， bs=4k, 不走cache(direct=1)
-NOTE: [rfile来自一个不到1G的安装包](https://releases.ubuntu.com/20.04/)
+NOTE: totoal是上面的网上一个2.6G的安装包，然后cat后，形成10G左右的一个文件。
 ```
 for i in {1..50}; do fio --name=r --filename=total --ioengine=sync --rw=randread --io_size=10M --bs=4k --direct=1 --randrepeat=0; done
 ```
@@ -474,24 +488,28 @@ for i in {1..20}; do rm w.0.0; fio --name=w --rw=write --ioengine=sync --direct=
 
 这个是模拟log写，和background做compaction时的随机大block size读的情况
 
-先启动写
+Mix中写的命令
 ```
-for i in {1..30}; do fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=5G --fsync=0 --bs=1024k; done
+for i in {1..20}; do rm w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=12G --fsync=0 --bs=1024k; done
 ```
-然后几乎同时启动随机block size=1024k的读
+然后几乎同时启动随机block size=1024k的读(顺序读按理会更模拟真实，但在bs=1024k后，随机读和顺序读差别不大，同时防止顺序读被SSD内部优化)
 ```
-for i in {1..10}; do fio --name=r --filename=rfile --ioengine=sync --rw=randread --io_size=900M --bs=1024k --direct=1; done
+for i in {1..10}; do fio --name=r --filename=total --ioengine=sync --rw=randread --io_size=2G --bs=1024k --direct=1 --randrepeat=0; done
 ```
+
+如果读写都是单独的，从上面的测试知道，write的throughput到200MB/s，而read到600MB/s以上。
 
 我们发现，对于写，没有太大影响， 比上面的block size=4k影响还要小。
 
-对于读，如果纯粹读，从之前的数据看，throughput可以到近200M。但在这个测试中的并发中，发现基本throughput在20M多或30M多，有6-9倍的降低。
+如果用上面，
+
+先写再启动读，则写的throughput仍然是200MB/s，而读则降低到20MB/s，即30倍的降幅。
+
+先读再启动写，测试结果类似，写变化不大，但读下降很多。
 
 ## 分析和结论
 
-所以，通过两个测试，可以知道，对于经过page cache的log写（block size=1024k），其throughput没有严重的影响（30%的影响）。影响大的是读（我们只考虑随机读，这也是生产环境的真实情况），不管是block size = 4k，还是block size = 1024k，和纯粹的比，都有大幅的降低。
-
-这是因为，page cache的writeback，一次性占用整个SSD的带宽，然后中间见缝插针地，来了一些random read。如果random read的block size比较小的话，相应的io数会多一些，因此对writeback的影响也相应大一些。但不管如何，writeback都是主要的带宽使用者，剩下的边角余料，才能供给random read.
+所以，通过两个测试，可以知道，对于经过page cache的log写（block size=1024k），其throughput没有严重的影响。影响大的是读（我们只考虑随机读，这也是生产环境的真实情况），不管是block size = 4k，还是block size = 1024k，和纯粹的比，都有大幅的至少几十倍的降低。
 
 不过，好在，读我们是很容易做load balance的，所以写不受太大影响，是好事。
 
