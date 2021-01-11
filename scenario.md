@@ -99,13 +99,21 @@ dd if=/dev/zero of=tfile bs=1M count=2048
 
 所以，用真实的数据文件，或者下载一个大小相当的文件包（最好是压缩的文件，比较接近真实的情况）
 
-我是下载了一个[Ubuntu 20的Desktop安装版本，有近3G大小](https://releases.ubuntu.com/20.04/)。
+我是下载了一个[Ubuntu 20的Desktop安装版本，有近3G大小](https://releases.ubuntu.com/20.04/)。我把它命名为tfile
 
 ```
 curl <URI> -o tfile
 ```
 
 同时发现，如果文件过小（比如百兆大小文件针对G量级文件），有1倍的数据差异。所以，建议部署接近Production的数据量，比如针对Rocksdb，部署多个文件，总量可达TB级别，参考fio的Target file/device的相关说明。
+
+为了产生大文件，可以在tfile基础上，形成一个几倍大小的total（10G or 20G）
+```
+cp tfile total
+cat tfile >> total
+cat tfile >> total
+...
+```
 
 ## direct in fio 
 
