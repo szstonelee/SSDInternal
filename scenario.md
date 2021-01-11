@@ -171,6 +171,28 @@ fio --name=test --filename=tfile --rw=read --io_size=200M --ioengine=sync --bs=4
 ```
 这时throughput=17MB/s，说明顺序读是随机读一倍。
 
+## sync vs aio；direct = 1 or 0
+
+fio我们使用两种engine，一个是sync，一个是libaio。
+
+sync很好理解。如果direct = 0，表示用到OS page cache。如果direct = 1，则表示[尽量不用到page cache](https://ext4.wiki.kernel.org/index.php/Clarifying_Direct_IO%27s_Semantics)，i.e., read through or write through page cache.
+
+AIO是Linux基于底层IO系统的async IO。比较有趣的是，Linux在block driver这一层，实际上是不支持async的，即AIO实际是在底层的非同步系统上包装了一层，以提供应用程序的异步接口。尽管AIO的部分组件已经是kernal的一部分，但逻辑理解上，你可以将AIO当做应用层上的事情，即Linux kernal IO是不支持异步模式的。Windows有不同，因为Windows有IO Completed这个接口，实现了真正的基于kernal的异步模式。但可惜的是，在服务器领域，Windows已经出局了。
+
+当使用AIO时，必须将direct设置为1，即不允许使用page cache。为什么？因为如果所读的页基于OS cache，那么它随时有可能被OS evict，i.e., 对任何一application，OS不保证上一指令已经读到的页在下一个指令还存在于内存，这将使异步无法建造或失去意义。因为我们用异步的目的，就是为了当时调用时工作线程不去等待，而在后面某个异步的event事件里能得到基于内存的实时操作的性能，i.e. non-blocking。所以，你可以理解AIO使用了自己特定的一套IO buffer管理和线程同步模式。这就好比MySQL和PostgreSQL对于buffer的管理理念不一样，MySQL尽可能用自己的buffer管理IO，而PostgreSQL则相信OS page cache。
+
+如果我们用AIO，又设置direct = 0会如何，参考Linux的帮助，这将使AIO报错或悄悄转为sync模式，[参考这里](http://lse.sourceforge.net/io/aio.html)
+
+## flush and sync
+
+很多时候，flush和sync在IO这一层被混用，其实它是两个概念。
+
+flush表示的是，IO数据，从应用层到了kernal层，i.e., OS page cache or block driver buffer。
+
+而sync，表示的是数据100%落到了磁盘上，i.e., disk给了response，刚才要写的数据安全入盘了。
+
+为了准确，我们尽可能用sync这个概念，少用flush这个词。在Linux API里，可以找到sync()和write()，但没有flush()。有fflush()，但那其实是write()。
+
 # 纯Read
 
 ## 基本Read：单线程，同步
@@ -186,9 +208,9 @@ fio --name=test --filename=tfile --rw=read --io_size=200M --ioengine=sync --bs=4
 for i in {1..5}; do <command>; done
 ```
 
-2. 测试文件大小有一定作用。如果用小的文件tfile(2.6G），偏差会比较大，有时会到1倍的差别。如果用大文件total(24G)，这个就相对稳定很多（但也偶尔看见50%的差别）。
+2. 测试文件大小有一定影响。如果用小的文件tfile(2.6G），偏差会比较大，有时会到1倍的差别。如果用大文件total(24G)，这个就相对稳定很多（但也偶尔看见50%的差别）。
 
-### 测试结果
+### 测试结果 random vs sequential in different block size
 
 | mode | bs | Tp | fio command |
 | --- | -------- | -------- | --- |
@@ -219,7 +241,7 @@ for i in {1..5}; do <command>; done
 
 3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，比较高，在k级别。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。
 
-## random read multi thread 以及 io depth
+## random read with multi thread and io depth
 
 ### WiscKey里的测试
 
@@ -262,9 +284,9 @@ for i in {1..5}; do <command>; done
 
 结论:
 
-1. 当threads=1时，iodetpht=1, 这里所用的libaio，和上面的sync read比，差别不大。
+1. 当threads=1时，iodetpht=1, 这里所用的libaio，和上面的sync random read比，差别不大。
 
-2. 起决定性作用的，还是block size。然后多thread或多iodepth，略有增加（或并没有什么增加）。
+2. 起决定性作用的，还是block size（倍数级增加）。然后多thread或多iodepth，有加强（50%以内）。
 
 3. 以上都是randomread，但在block size = 1024k时，不管是iodepth，还是多线程，其性能都可以和最上面的单线程同步顺序(sequential)的数据一个水准。
 
@@ -303,7 +325,7 @@ for i in {1..5}; do <command>; done
 fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsync=0 --bs=4k
 ```
 NOTE: 
-1. --end_fsync=1，最后文件写完，保证给一个fsync，因为有时fsync=0 (比如上面的direct=0等价于fsync=0)
+1. --end_fsync=1，最后文件写完，保证给一个fsync，因为缺省下fsync=0
 
 2. 如果direct=1，那么fsync参数不一定有效，[参考fio的文档](https://fio.readthedocs.io/en/latest/fio_doc.html#)。对于写，我们基本不考虑direct=1，即我们一定要用到OS page cache.
 
