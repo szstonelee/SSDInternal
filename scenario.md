@@ -404,11 +404,11 @@ NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文�
 | 32 | 32 | 1376MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=32 --numjobs=32 --thread --group_reporting |
 | 64 | 1 | 2340MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=1 --numjobs=64 --thread --group_reporting |
 
-以上数据惊人，throughput甚至达到了GB/s级别，而且全部和thread数量增加相关。有个怀疑是：其实多线程写，是多线程操作SSD内部的SDRAM，即第一个线程顺序写文件，留下了很多cache在SSD内部的SDRAM里，后面的线程利用了这个cache，虽然还需要再写一遍，但由于是同一文件同一位置，所以速度可以大大提高（甚至可以优化成0写）。
+以上数据惊人，throughput甚至达到了GB/s级别，而且全部和thread数量增加相关。有个怀疑是：其实多线程写，是多线程操作SSD内部的SDRAM，即第一个线程顺序写文件，留下了很多cache在SSD内部的SDRAM里，后面的线程利用了这个cache，虽然还需要再写一遍，但由于是同一文件同一位置，所以速度可以大大提高（甚至可以优化成零写，比如让SSD内部的两个逻辑地址LBA指向同一物理page）。
 
 ### 修正的测试
 
-所以，做个修正，让每个线程写不同的文件，然后并发线程，看效果如何，见下表
+所以，做个修正，让每个线程写不同的文件(i.e. 去掉--filename=)，然后并发线程，看效果如何，见下表
 
 | threads | io depth | throughtput | command |
 | -- | -- | -- | -- |
@@ -426,25 +426,24 @@ NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文�
 
 | threads | io depth | throughtput | command |
 | -- | -- | -- | -- |
-| 1 | 1 | 155MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=1 --numjobs=1 --thread --group_reporting |
-| 1 | 4 | 198MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=40G --bs=1024k --iodepth=4 --numjobs=1 --thread --group_reporting |
-| 4 | 1 | 182MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=20G --bs=1024k --iodepth=1 --numjobs=4 --thread --group_reporting |
-| 4 | 4 | 176MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=20G --bs=1024k --iodepth=4 --numjobs=4 --thread --group_reporting |
-| 8 | 1 | 169MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=7G --bs=1024k --iodepth=1 --numjobs=8 --thread --group_reporting |
-| 8 | 4 | 169MB/s | fio --name=w --filename=wfile --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=7G --bs=1024k --iodepth=4 --numjobs=8 --thread --group_reporting |
+| 1 | 1 | 138MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=1 --numjobs=1 --thread --group_reporting --randrepeat=0; |
+| 1 | 4 | 149MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=4 --numjobs=1 --thread --group_reporting --randrepeat=0; |
+| 4 | 1 | 146MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=4G --io_size=4G --bs=1024k --iodepth=1 --numjobs=4 --thread --group_reporting --randrepeat=0; |
+| 4 | 4 | 160MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=4G --io_size=4G --bs=1024k --iodepth=4 --numjobs=4 --thread --group_reporting --randrepeat=0; |
+| 8 | 1 | 156MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=2G --io_size=2G --bs=1024k --iodepth=1 --numjobs=8 --thread --group_reporting --randrepeat=0; |
+| 8 | 4 | 166MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=2G --io_size=2G --bs=1024k --iodepth=4 --numjobs=8 --thread --group_reporting --randrepeat=0; |
 
 ### 附二：block size = 4k
 
-只考虑block size=4k，同时只是最后用sync，i.e., fsync=0(direct=1，注意：必须direct=1，因为libaio，[参考这里](https://fio.readthedocs.io/en/latest/fio_man.html#i-o-engine)) and end_fsync=1。
+只考虑block size=4k，同时只是最后用sync，i.e., fsync=0 (注意：必须direct=1，因为libaio，[参考这里](https://fio.readthedocs.io/en/latest/fio_man.html#i-o-engine)) and end_fsync=1。
 
 | bs | iodepth | Tp | fio command |
 | :-: | :-: | -- | -- |
-| 4k | 1 | 18M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=1 |
-| 4k | 2 | 26M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=2 |
-| 4k | 4 | 35M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=4 |
-| 4k | 8 | 37M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=8 |
-| 4k | 16 | 41M/s | fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=16 |
-
+| 4k | 1 | 26.0MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=2G --bs=4k --iodepth=1; |
+| 4k | 2 | 32.1MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=2G --bs=4k --iodepth=2; |
+| 4k | 4 | 56.6MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=4G --bs=4k --iodepth=4; |
+| 4k | 8 | 56.7MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=8; |
+| 4k | 16 | 55.9MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=16; |
 
 # Write mix with Read 
 
