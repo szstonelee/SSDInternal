@@ -247,7 +247,7 @@ for i in {1..5}; do <command>; done
 
 2. 单个模式下block size变化规律：block size越大，则throughput越大，block size小时（小于或等于64k），block size大一倍，throughput也接近一倍。最大block size，i.e., 1024k，相比最小的block size，i.e., 4k，其throughput相比可以70倍的差别，i.e., random或sequential模式下bs=4k vs bs=1024k。 这比较符合SSD的工作原理，即并发导致高速（parallelism for performance），而block size比较高时，利于SSD内部做并发。而block size到了128k以上时，并发的边际效应开始降低。
 
-3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，比较高，在k级别。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。
+3. 因为block size和throughput的关系，可以推算出，IOPS在block size比较小的时候，比较高，在k级别。当block size比较高时，IOPS开始降低，比如：bs=1024K下，IOPS在几百。这个和HDD比，是一个数量级。一个HDD，在1024K下，可以到近200。但HDD在其他bs下，也是这个IOPS。所以，SSD的优势在于小的block size。
 
 ## random read with multi thread and io depth
 
@@ -255,7 +255,7 @@ for i in {1..5}; do <command>; done
 
 [对这篇文章 WiscKey- Separating Keys from Values in SSD-conscious Storage， Figure3](https://www.usenix.org/system/files/conference/fast16/fast16-papers-lu.pdf)，里面的东西有所怀疑，因为从图示分析得到下面三点，
 
-1. sequential在block size从小到大时，throughput几乎无变化。有两种可能，其一，就是queued depth很大，这样小的block size即使咋单线程下，也可以因为queue汇合成大的block size；但注意：我的Mac上的SSD没有这个特性，也许其他企业级的SSD如此；其二，就是多线程效果，这样并发的请求达到和同样的效果。NOTE: 对于我的Mac，只有一种情况下可以实现sequential，不管block size是多少，都是最高的throughput，即必须启用page cache，i.e., direct = 0。
+1. sequential在block size从小到大时，throughput几乎无变化。有两种可能，其一，就是queued depth很大，这样小的block size即使咋单线程下，也可以因为queue汇合成大的block size；但注意：我的Mac上的SSD没有这个特性，也许其他企业级的SSD如此；其二，就是多线程效果，这样并发的请求达到和同样的效果。NOTE: 对于我的Mac，只有一种情况下可以实现这种sequential下不管block size是多少，都是最高的throughput，即必须启用page cache，i.e., direct = 0。
 
 2. random read随着block size增大，不管是单线程，还是多线程，都是增大的。但多线程，有进一步放大的效果。在一定线程数和不太大的block size下，对于random read，也可以达到和sequential read一样的最高的throughput。图中单线程只到block size=256K这种情况，其throughput也达到最大值的近60%，如果能到block size=1M，怀疑能接近最大的带宽。
 
@@ -345,7 +345,7 @@ NOTE:
 
 NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下一个仍用上一个文件，会导致一些数据失真。
 
-#### fsync = 0
+#### fsync = 0，sequetial write
 
 | bs | throughput | fio command |
 | -- | -- | -- |
@@ -359,7 +359,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 | 512k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=512k; | 
 | 1024k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=1024k; |
 
-#### fsync = 1
+#### fsync = 1，sequetial write
 
 | bs | throughput | fio command |
 | -- | -- | -- |
@@ -373,7 +373,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 | 512k | 175MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=15G --bs=512k; | 
 | 1024k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=17G --bs=1024k; |
 
-#### block = 4k, fsync = 1, 2, 4, 8, 16, 32, 64, 128
+#### block = 4k, fsync = 1, 2, 4, 8, 16, 32, 64, 128，sequetial write
 
 | fsync | throughput | fio command |
 | -- | -- | -- |
@@ -386,7 +386,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 | 64 | 120MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=64 --end_fsync=1 --size=8G --bs=4k; |
 | 128 | 168MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=128 --end_fsync=1 --size=10G --bs=4k; |
 
-#### block = 32k, fysnc = 1, 2, 4, 8, 16, 32, 64, 128
+#### block = 32k, fysnc = 1, 2, 4, 8, 16, 32, 64, 128，sequetial write
 
 | fsync | throughput | fio command |
 | -- | -- | -- |
