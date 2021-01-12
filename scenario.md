@@ -115,7 +115,7 @@ cat tfile >> total
 ...
 ```
 
-## direct in fio 
+## fio :: direct 参数 
 
 如果direct=1，不管是read还是write，那么page cache将不启作用（write bypass page cache同时，会让相应的page失效）。
 
