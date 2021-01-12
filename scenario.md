@@ -119,7 +119,7 @@ cat tfile >> total
 
 如果direct=1，不管是read还是write，那么page cache将不启作用（write bypass page cache同时，会让相应的page失效）。
 
-如果direct=0，很复杂。还有两个参数可能影响，[一个是invalidate，一个是pre_read](https://fio.readthedocs.io/en/latest/fio_man.html#cmdoption-arg-invalidate)
+如果direct=0，将使用到OS page cache。这很复杂。还有两个参数可能影响，[一个是invalidate，一个是pre_read](https://fio.readthedocs.io/en/latest/fio_man.html#cmdoption-arg-invalidate)
 
 下面的测试中，如果我们不想使用page cache，direct总是1。但如果我们想看page cache的write back功能，我们设置direct = 0，一般同时[fsync = 0](https://fio.readthedocs.io/en/latest/fio_man.html#cmdoption-arg-fsync)（也偶尔测试批sync的）
 
@@ -167,7 +167,7 @@ fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --
 ```
 就会发现throughput=2GB/s左右。这是因为基本都是从内存读到数据（我们之前有做热身）
 
-上面那个page cache能有效，是因为randread两次执行的随机数时一样的，如果我们设置不同的随机数，i.e., --randrepeat=0，我们会发现page cache的作用没了
+上面那个page cache能有效，是因为randread两次执行的随机数时一样的，如果我们设置不同的随机数，i.e., --randrepeat=0，我们会发现page cache的作用没了（或准确地说，作用变小了，因为读的是200M，文件tfile超过2G，随机读到同一page的机会不大）
 ```
 fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0 \
 --randrepeat=0
@@ -179,17 +179,17 @@ fio --name=test --filename=tfile --rw=read --io_size=200M --ioengine=sync --bs=4
 ```
 这时throughput=17MB/s，说明顺序读是随机读一倍。
 
-## sync vs aio；direct = 1 or 0
+## sync vs aio 以及 direct = 1 or 0
 
 fio我们使用两种engine，一个是sync，一个是libaio。
 
 sync很好理解。如果direct = 0，表示用到OS page cache。如果direct = 1，则表示[尽量不用到page cache](https://ext4.wiki.kernel.org/index.php/Clarifying_Direct_IO%27s_Semantics)，i.e., read through or write through page cache.
 
-AIO是Linux基于底层IO系统的async IO。比较有趣的是，Linux在block driver这一层，实际上是不支持async的，即AIO实际是在底层的非同步系统上包装了一层，以提供应用程序的异步接口。尽管AIO的部分组件已经是kernal的一部分，但逻辑理解上，你可以将AIO当做应用层上的事情，即Linux kernal IO是不支持异步模式的。Windows有不同，因为Windows有IO Completed这个接口，实现了真正的基于kernal的异步模式。但可惜的是，在服务器领域，Windows已经出局了。
+AIO是Linux基于底层IO系统的async IO。比较有趣的是，Linux在block driver这一层，实际上是不支持async的，即AIO实际是在底层的非异步系统上包装了一层，以提供应用程序的异步接口。尽管AIO的部分组件已经是kernal的一部分，但逻辑理解上，你可以将AIO当做应用层上的事情，即Linux kernal IO是不支持异步模式的。Windows有不同，因为Windows有IO Completed这个接口，实现了真正的基于kernal的异步模式。但可惜的是，在服务器领域，Windows已经出局了。
 
-当使用AIO时，必须将direct设置为1，即不允许使用page cache。为什么？因为如果所读的页基于OS cache，那么它随时有可能被OS evict，i.e., 对任何一application，OS不保证上一指令已经读到的页在下一个指令还存在于内存，这将使异步无法建造或失去意义。因为我们用异步的目的，就是为了当时调用时工作线程不去等待，而在后面某个异步的event事件里能得到基于内存的实时操作的性能，i.e. non-blocking。所以，你可以理解AIO使用了自己特定的一套IO buffer管理和线程同步模式。这就好比MySQL和PostgreSQL对于buffer的管理理念不一样，MySQL尽可能用自己的buffer管理IO，而PostgreSQL则相信OS page cache。
+当使用AIO时，必须将direct设置为1，即不允许使用page cache。为什么？因为如果所读的页基于OS cache，那么它随时有可能被OS evict，i.e., 对任何一application，OS不保证上一指令已经读到的页在下一个指令还存在于内存，这将使异步无法建造或失去意义。因为我们用异步的目的，就是为了当时调用时工作线程calling后不用去阻塞block，可以去做其他工作，之后某个合适的时刻（比如 poll or epoll）在后面某个异步的event事件里能得到基于内存的保证实时操作的性能，i.e. non-blocking。所以，你可以理解AIO使用了自己特定的一套IO buffer管理和线程同步模式。这就好比MySQL和PostgreSQL对于buffer的管理理念不一样，MySQL尽可能用自己的buffer管理IO，而PostgreSQL则相信OS page cache。
 
-如果我们用AIO，又设置direct = 0会如何，参考Linux的帮助，这将使AIO报错或悄悄转为sync模式，[参考这里](http://lse.sourceforge.net/io/aio.html)
+如果我们用AIO，又设置direct = 0会如何？[参考Linux的帮助](http://lse.sourceforge.net/io/aio.html)，这将使AIO报错或悄悄转为sync模式。
 
 ## flush and sync
 
@@ -197,7 +197,7 @@ AIO是Linux基于底层IO系统的async IO。比较有趣的是，Linux在block 
 
 flush表示的是，IO数据，从应用层到了kernal层，i.e., OS page cache or block driver buffer。
 
-而sync，表示的是数据100%落到了磁盘上，i.e., disk给了response，刚才要写的数据安全入盘了。
+而sync，表示的是数据100%落到了磁盘上，i.e., disk给了response，拍胸脯保证刚才要写的数据安全入盘了（但disk可能配置错误导致失败，比如：RAID卡中设置了write cache，或者硬件出问题，比如Disk Controller卡上的电池没电）。
 
 为了准确，我们尽可能用sync这个概念，少用flush这个词。在Linux API里，可以找到sync()和write()，但没有flush()。有fflush()，但那其实是write()。
 
@@ -255,7 +255,7 @@ for i in {1..5}; do <command>; done
 
 [对这篇文章 WiscKey- Separating Keys from Values in SSD-conscious Storage， Figure3](https://www.usenix.org/system/files/conference/fast16/fast16-papers-lu.pdf)，里面的东西有所怀疑，因为从图示分析得到下面三点，
 
-1. sequential在block size从小到大时，throughput几乎无变化。有两种可能，其一，就是queued depth很大，这样小的block size即使咋单线程下，也可以因为queue汇合成大的block size；但注意：我的Mac上的SSD没有这个特性，也许其他企业级的SSD如此；其二，就是多线程效果，这样并发的请求达到和同样的效果。
+1. sequential在block size从小到大时，throughput几乎无变化。有两种可能，其一，就是queued depth很大，这样小的block size即使咋单线程下，也可以因为queue汇合成大的block size；但注意：我的Mac上的SSD没有这个特性，也许其他企业级的SSD如此；其二，就是多线程效果，这样并发的请求达到和同样的效果。NOTE: 对于我的Mac，只有一种情况下可以实现sequential，不管block size是多少，都是最高的throughput，即必须启用page cache，i.e., direct = 0。
 
 2. random read随着block size增大，不管是单线程，还是多线程，都是增大的。但多线程，有进一步放大的效果。在一定线程数和不太大的block size下，对于random read，也可以达到和sequential read一样的最高的throughput。图中单线程只到block size=256K这种情况，其throughput也达到最大值的近60%，如果能到block size=1M，怀疑能接近最大的带宽。
 
