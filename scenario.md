@@ -359,7 +359,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 | 512k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=512k; | 
 | 1024k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=20G --bs=1024k; |
 
-#### fsync = 1，sequetial write
+#### fsync = 1，sequential write
 
 | bs | throughput | fio command |
 | -- | -- | -- |
@@ -373,7 +373,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 | 512k | 175MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=15G --bs=512k; | 
 | 1024k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=17G --bs=1024k; |
 
-#### block = 4k, fsync = 1, 2, 4, 8, 16, 32, 64, 128，sequetial write
+#### block = 4k, fsync = 1, 2, 4, 8, 16, 32, 64, 128，sequential write
 
 | fsync | throughput | fio command |
 | -- | -- | -- |
@@ -386,7 +386,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 | 64 | 120MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=64 --end_fsync=1 --size=8G --bs=4k; |
 | 128 | 168MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=128 --end_fsync=1 --size=10G --bs=4k; |
 
-#### block = 32k, fysnc = 1, 2, 4, 8, 16, 32, 64, 128，sequetial write
+#### block = 32k, fysnc = 1, 2, 4, 8, 16, 32, 64, 128，sequential write
 
 | fsync | throughput | fio command |
 | -- | -- | -- |
