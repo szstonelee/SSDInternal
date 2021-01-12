@@ -187,7 +187,9 @@ sync很好理解。如果direct = 0，表示用到OS page cache。如果direct =
 
 AIO是Linux基于底层IO系统的async IO。比较有趣的是，Linux在block driver这一层，实际上是不支持async的，即AIO实际是在底层的非异步系统上包装了一层，以提供应用程序的异步接口。尽管AIO的部分组件已经是kernal的一部分，但逻辑理解上，你可以将AIO当做应用层上的事情，即Linux kernal IO是不支持异步模式的。Windows有不同，因为Windows有IO Completed这个接口，实现了真正的基于kernal的异步模式。但可惜的是，在服务器领域，Windows已经出局了。
 
-当使用AIO时，必须将direct设置为1，即不允许使用page cache。为什么？因为如果所读的页基于OS cache，那么它随时有可能被OS evict，i.e., 对任何一application，OS不保证上一指令已经读到的页在下一个指令还存在于内存，这将使异步无法建造或失去意义。因为我们用异步的目的，就是为了当时调用时工作线程calling后不用去阻塞block，可以去做其他工作，之后某个合适的时刻（比如 poll or epoll）在后面某个异步的event事件里能得到基于内存的保证实时操作的性能，i.e. non-blocking。所以，你可以理解AIO使用了自己特定的一套IO buffer管理和线程同步模式。这就好比MySQL和PostgreSQL对于buffer的管理理念不一样，MySQL尽可能用自己的buffer管理IO，而PostgreSQL则相信OS page cache。
+当使用AIO时，必须将direct设置为1，即不允许使用page cache。[参考这里](https://fio.readthedocs.io/en/latest/fio_man.html#i-o-engine)
+
+为什么？因为如果所读的页基于OS cache，那么它随时有可能被OS evict，i.e., 对任何一application，OS不保证上一指令已经读到的页在下一个指令还存在于内存，这将使异步无法建造或失去意义。因为我们用异步的目的，就是为了当时调用时工作线程calling后不用去阻塞block，可以去做其他工作，之后某个合适的时刻（比如 poll or epoll）在后面某个异步的event事件里能得到基于内存的保证实时操作的性能，i.e. non-blocking。所以，你可以理解AIO使用了自己特定的一套IO buffer管理和线程同步模式。这就好比MySQL和PostgreSQL对于buffer的管理理念不一样，MySQL尽可能用自己的buffer管理IO，而PostgreSQL则相信OS page cache。
 
 如果我们用AIO，又设置direct = 0会如何？[参考Linux的帮助](http://lse.sourceforge.net/io/aio.html)，这将使AIO报错或悄悄转为sync模式。
 
@@ -201,7 +203,7 @@ flush表示的是，IO数据，从应用层到了kernal层，i.e., OS page cache
 
 为了准确，我们尽可能用sync这个概念，少用flush这个词。在Linux API里，可以找到sync()和write()，但没有flush()。有fflush()，但那其实是write()。
 
-# 纯Read
+# 纯read
 
 ## 基本Read：单线程，同步
 
@@ -373,7 +375,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 | 512k | 175MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=15G --bs=512k; | 
 | 1024k | 191MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=1 --end_fsync=1 --size=17G --bs=1024k; |
 
-#### block = 4k, fsync = 1, 2, 4, 8, 16, 32, 64, 128，sequential write
+#### block = 4k，fsync = 1, 2, 4, 8, 16, 32, 64, 128，sequential write
 
 | fsync | throughput | fio command |
 | -- | -- | -- |
@@ -386,7 +388,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 | 64 | 120MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=64 --end_fsync=1 --size=8G --bs=4k; |
 | 128 | 168MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=sync --direct=0 --fsync=128 --end_fsync=1 --size=10G --bs=4k; |
 
-#### block = 32k, fysnc = 1, 2, 4, 8, 16, 32, 64, 128，sequential write
+#### block = 32k，fysnc = 1, 2, 4, 8, 16, 32, 64, 128，sequential write
 
 | fsync | throughput | fio command |
 | -- | -- | -- |
@@ -430,15 +432,15 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 
 1. 对于sequential write, 当fysnc=0时，bs从4k到1024k，throughput都差别不大，都是200M左右。这意味写盘都先到page cache里，然后由os来write back。一般而言，都是接近磁盘的写的最大带宽。
 
-2. 对于random write，当fsync=0而且direct=0(write back by OS page cache)时，并没有显示出如sequential那样的throughput，是个非常有趣的现象。我的推论是：当sequential write时，在page cache里小的block size（例如：4k）可以组成大的block size，然后写入到disk。而且这些block size=1024k的写入还是连续的，i.e., 可以组成更大的block size。而random write，做不到这一点（因为随机分散到22G大文件的各个部分）。只能batch/group提交。如果os cache或block driver对于内部group有一定限额的话，那么并发的性能并不高。即使random write下block size = 1024k，其性能和block size = 4k但sequential write相比，也只能达到后者的一半性能。所以，block size是首个关键（连续4k的block size可以相当于1024k），然后是这些大的block size是否也临近（即理论上能产生更大的block size）。这个对于B树的heap文件写有很大的参考意义。同时，可以参考下面的libaio的测试数据来印证这一推论。
+2. 对于random write，当fsync为0而且direct为0(write back by OS page cache)时，并没有显示出如sequential那样的throughput，是个非常有趣的现象。我的推论是：当sequential write时，在page cache里小的block size（例如：4k）可以组成大的block size，然后写入到disk。而且这些block size为1024k的写入还是连续的，i.e., 可以组成更大的block size。而random write，做不到这一点（因为随机分散到22G大文件的各个部分）。只能batch/group提交。如果os cache或block driver对于内部group有一定限额的话，那么并发的性能并不高。即使random write下block size为1024k，其性能和block size = 4k但sequential write相比，也只能达到后者的一半性能。所以，block size是首个关键（连续4k的block size可以相当于1024k），然后是这些大的block size是否也临近（即理论上能产生更大的block size）。这个对于B树的heap文件写有很大的参考意义。同时，可以参考下面的libaio的测试数据来印证这一推论。
 
 3. 当fsync=1时，是最慢的写盘操作。每一个bs写盘，都要sync到SSD后才能继续。这相当于数据库系统里的每次写盘都sync的配置。是数据最安全的，但也是最慢的。其中，在4k，8k, 16k时，相比fsync=0或fsync!=0但bs=1024k的写盘，有几十倍甚至近百倍的差别。很多数据库的页的大小，或者最小写盘单位，就是这三个单位。
 
 4. 当fsync=1时，当bs比较大，比如512k, 1024k时，其写盘速度和最大带宽差别不大，因为当bs比较大时，SSD的并发优势将会被充分利用到。同时，这也给设计带来一个技巧，就是需要sync=1，可以收集一批小的而且相邻的写，然后集中后用一个比较大的block size写入，这时，其性能基本是最大值，和OS page cache的效果差不多。
 
-5. 通过block size为4k和32k，但fsync的变化可以看出，如果一次fsync能多提交一些请求，即使block size很小，也能达到很大的写入速度。这就是batch或group的效用。
+5. 通过block size为4k和32k，但fsync的变化可以看出，如果一次fsync能多提交一些请求，即使block size很小，也能达到很大的写入速度。这就是batch/group的效用。
 
-## 多线程和io depth下的Write
+## 多线程和io depth下的write
 
 由于是RocksDB，我们只考虑block szie = 1024k的情况 (以下做5次，取中间值)
 
@@ -492,7 +494,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 
 ### 附二：block size = 4k, single thread and sequential
 
-只考虑block size=4k，同时只是最后用sync，i.e., fsync=0 (注意：必须direct=1，因为libaio，[参考这里](https://fio.readthedocs.io/en/latest/fio_man.html#i-o-engine)) and end_fsync=1。
+只考虑block size=4k，同时只是最后用sync，i.e., fsync=0 and end_fsync=1。
 
 | bs | iodepth | Tp | fio command |
 | :-: | :-: | -- | -- |
@@ -505,9 +507,9 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 | 4k | 512 | 62.7MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=512; |
 
 1. 在我的机器上，iodepth到了4，基本就是libaio就到了最大速度
-2. 和OS page cache（engine=sync with direct = 0）相比，速度差的很远。说明libaio对于buffer的优化不如OS
+2. 和OS page cache（engine=sync with direct = 0）相比，速度差的很远。说明libaio对于buffer的优化不如OS。
 
-### 附二：block size = 4k, multi thread and sequential but multi files
+### 附三：block size = 4k, multi thread and sequential but multi files
 
 | bs | threads | Tp | fio command |
 | -- | -- | -- | -- |
@@ -518,9 +520,9 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 
 1. 可以看到，多线程作用不大。和上面的AIO（见“修正的测试”）达到最高速相比较，block size才是关键。
 
-# Write mix with Read 
+# write mix with Read 
 
-## Write of page cache with random 4k read
+## write of page cache with random 4k read
 
 我们测试下面这种情况：首先write是log模式，同时全部走page cache，这样write log是最大效率。同时，另外一个进程（或线程）同时并发bs=4k的random read。然后看互相的影响。
 
@@ -543,7 +545,7 @@ for i in {1..20}; do rm w.0.0; fio --name=w --rw=write --ioengine=sync --direct=
 
 但对于随机读，就付出了代价。没有写时，是10MB/s。当加了写后，降低到100-200K/s，近100倍的降低。
 
-## Write of page cache with random 1024k read
+## write of page cache with random 1024k read
 
 这个是模拟log写，和background做compaction时的随机大block size读的情况
 
