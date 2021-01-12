@@ -205,7 +205,7 @@ flush表示的是，IO数据，从应用层到了kernal层，i.e., OS page cache
 
 # 纯read
 
-## 基本Read：单线程，同步
+## 基本read：单线程，同步
 
 我们用最基本的read，即ioengine=sync，同时不受page cache影响，所以direct=1。然后比较随机读rw=randread，以及顺序读rw=read，比较block size在不同值下的throughput.
 
@@ -318,9 +318,9 @@ for i in {1..5}; do <command>; done
 
 所以，我们再测试block size比较小的4KB时，一定要注意这个并发性，否则，就没有太大的差别，容易搞错测试的本质。
 
-# 纯Write
+# 纯write
 
-## 基本Write：单线程，同步
+## 基本write：单线程，同步
 
 ### 命令说明
 
@@ -520,7 +520,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 
 1. 可以看到，多线程作用不大。和上面的AIO（见“修正的测试”）达到最高速相比较，block size才是关键。
 
-# write mix with Read 
+# write mix with read 
 
 ## write of page cache with random 4k read
 
