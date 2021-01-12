@@ -335,15 +335,15 @@ fio --name=w --rw=write --ioengine=sync --direct=0 --end_fsync=1 --size=8G --fsy
 NOTE: 
 1. --end_fsync=1，最后文件写完，保证给一个fsync，因为缺省下fsync=0
 
-2. 如果direct=1，那么fsync参数不一定有效，[参考fio的文档](https://fio.readthedocs.io/en/latest/fio_doc.html#)。对于写，我们基本不考虑direct=1，即我们一定要用到OS page cache.
+2. 如果direct=1，那么fsync参数不保证有效，[参考fio的文档](https://fio.readthedocs.io/en/latest/fio_doc.html#)。对于写，我们基本不考虑direct=1，即我们一定要用到OS page cache.
 
 3. 如果测试时间比较短（只有几十秒），请用多次```for i in {1..5}; do <command>; done```，然后取中间值的throughput作为其代表
 
-我们主要测试，不同block size下，fsync是0（不发出）,1（相当于sync）或其他值（相当于batch commit）的情况
+我们主要测试，不同block size下，fsync是0（不发出)，1（相当于每次都sync）或其他值（相当于batch/group commit）的情况
 
 ### 测试结果
 
-NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文件，会导致一些数据失真。
+NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下一个仍用上一个文件，会导致一些数据失真。
 
 #### fsync = 0
 
@@ -408,22 +408,35 @@ NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文�
 | 16k | 47.6MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=3G --bs=16k; |
 | 32k | 69.0MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=4G --bs=32k; |
 | 64k | 96.3MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=5G --bs=64k; |
-| 128k | 100MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=6G --bs=128k; |
-| 256k | 106MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=8G --bs=256k; |
-| 512k | 111MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=9G --bs=512k; |
-| 1024k | 115MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=10G --bs=1024k; |
+| 128k | 104MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=5G --bs=128k; |
+| 256k | 104MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=5G --bs=256k; |
+| 512k | 110MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=5G --bs=512k; |
+| 1024k | 101MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=22G --io_siz=5G --bs=1024k; |
+
+注意：randwrite下，如果io_size接近或超过size，会导致数据失真，如下表的测试：
+
+| size | io_size | throuhgput | fio command |
+| -- | -- | -- | -- |
+| 1G | 100M | 17.7MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=1G --io_siz=100M --bs=4k; |
+| 1G | 200M | 26.9MB/s |  rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=1G --io_siz=200M --bs=4k; |
+| 1G | 400M | 27.8MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=1G --io_siz=400M --bs=4k; |
+| 1G | 800M | 65.2MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=1G --io_siz=800M --bs=4k; |
+| 1G | 2G | 62.6MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=1G --io_siz=2G --bs=4k; |
+| 1G | 4G | 78.3MB/s | rm -f w.0.0; fio --name=w --rw=randwrite --randrepeat=0 --ioengine=sync --direct=0 --fsync=0 --end_fsync=1 --size=1G --io_siz=4G --bs=4k; |
+
+失真的原因怀疑是：如果io_size过大，那么重复到同一block的机会加大，导致throughput有偏差。
 
 #### 分析
 
 1. 对于sequential write, 当fysnc=0时，bs从4k到1024k，throughput都差别不大，都是200M左右。这意味写盘都先到page cache里，然后由os来write back。一般而言，都是接近磁盘的写的最大带宽。
 
-2. 对于random write，当fsync=0而且direct=0(write back by OS page cache)时，并没有显示出如sequential那样的throughput，是个非常有趣的现象。？？？
+2. 对于random write，当fsync=0而且direct=0(write back by OS page cache)时，并没有显示出如sequential那样的throughput，是个非常有趣的现象。我的推论是：当sequential write时，在page cache里小的block size（例如：4k）可以组成大的block size，然后写入到disk。而且这些block size=1024k的写入还是连续的，i.e., 可以组成更大的block size。而random write，做不到这一点（因为随机分散到22G大文件的各个部分）。只能batch/group提交。如果os cache或block driver对于内部group有一定限额的话，那么并发的性能并不高。即使random write下block size = 1024k，其性能和block size = 4k但sequential write相比，也只能达到后者的一半性能。所以，block size是首个关键（连续4k的block size可以相当于1024k），然后是这些大的block size是否也临近（即理论上能产生更大的block size）。这个对于B树的heap文件写有很大的参考意义。同时，可以参考下面的libaio的测试数据来印证这一推论。
 
-2. 当fsync=1时，是最慢的写盘操作。每一个bs写盘，都要flush & sync到SSD后才能继续。这相当于数据库系统里的每次写盘都sync的配置。是数据最安全的，但也是最慢的。其中，在4k，8k, 16k时，相比fsync=0或fsync!=0但bs=1024k的写盘，有几十倍甚至近百倍的差别。很多数据库的页的大小，或者最小写盘单位，就是这三个单位。
+3. 当fsync=1时，是最慢的写盘操作。每一个bs写盘，都要sync到SSD后才能继续。这相当于数据库系统里的每次写盘都sync的配置。是数据最安全的，但也是最慢的。其中，在4k，8k, 16k时，相比fsync=0或fsync!=0但bs=1024k的写盘，有几十倍甚至近百倍的差别。很多数据库的页的大小，或者最小写盘单位，就是这三个单位。
 
-3. 当fsync=1时，当bs比较大，比如512k, 1024k时，其写盘速度和最大带宽差别不大，因为当bs比较大时，SSD的并发优势将会被充分利用到。同时，这也给设计带来一个技巧，就是需要sync=1，可以收集一批小的而且相邻的写，然后集中后用一个比较大的block size写入，这时，其性能基本是最大值，和OS page cache的效果差不多。
+4. 当fsync=1时，当bs比较大，比如512k, 1024k时，其写盘速度和最大带宽差别不大，因为当bs比较大时，SSD的并发优势将会被充分利用到。同时，这也给设计带来一个技巧，就是需要sync=1，可以收集一批小的而且相邻的写，然后集中后用一个比较大的block size写入，这时，其性能基本是最大值，和OS page cache的效果差不多。
 
-4. 通过block size为4k和32k，但fsync的变化可以看出，如果一次fsync能多提交一些请求，即使block size很小，也能达到很大的写入速度。这就是batch或group的效用。
+5. 通过block size为4k和32k，但fsync的变化可以看出，如果一次fsync能多提交一些请求，即使block size很小，也能达到很大的写入速度。这就是batch或group的效用。
 
 ## 多线程和io depth下的Write
 
@@ -470,14 +483,14 @@ NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文�
 
 | threads | io depth | throughtput | command |
 | -- | -- | -- | -- |
-| 1 | 1 | 138MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=1 --numjobs=1 --thread --group_reporting --randrepeat=0; |
-| 1 | 4 | 149MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=4 --numjobs=1 --thread --group_reporting --randrepeat=0; |
-| 4 | 1 | 146MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=4G --io_size=4G --bs=1024k --iodepth=1 --numjobs=4 --thread --group_reporting --randrepeat=0; |
-| 4 | 4 | 160MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=4G --io_size=4G --bs=1024k --iodepth=4 --numjobs=4 --thread --group_reporting --randrepeat=0; |
-| 8 | 1 | 156MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=2G --io_size=2G --bs=1024k --iodepth=1 --numjobs=8 --thread --group_reporting --randrepeat=0; |
-| 8 | 4 | 166MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=2G --io_size=2G --bs=1024k --iodepth=4 --numjobs=8 --thread --group_reporting --randrepeat=0; |
+| 1 | 1 | 102MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=22G --io_size=5G --bs=1024k --iodepth=1 --numjobs=1 --thread --group_reporting --randrepeat=0; |
+| 1 | 4 | 108MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=22G --io_size=5G --bs=1024k --iodepth=4 --numjobs=1 --thread --group_reporting --randrepeat=0; |
+| 4 | 1 | 116MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=6G --io_size=1G --bs=1024k --iodepth=1 --numjobs=4 --thread --group_reporting --randrepeat=0; |
+| 4 | 4 | 110MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=6G --io_size=1G --bs=1024k --iodepth=4 --numjobs=4 --thread --group_reporting --randrepeat=0; |
+| 8 | 1 | 102MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=3G --io_size=600M --bs=1024k --iodepth=1 --numjobs=8 --thread --group_reporting --randrepeat=0; |
+| 8 | 4 | 112MB/s | rm -f w.?.0; fio --name=w --rw=randwrite --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=3G --io_size=600M --bs=1024k --iodepth=4 --numjobs=8 --thread --group_reporting --randrepeat=0; |
 
-### 附二：block size = 4k
+### 附二：block size = 4k, single thread and sequential
 
 只考虑block size=4k，同时只是最后用sync，i.e., fsync=0 (注意：必须direct=1，因为libaio，[参考这里](https://fio.readthedocs.io/en/latest/fio_man.html#i-o-engine)) and end_fsync=1。
 
@@ -488,6 +501,22 @@ NOTE: loop测试写前，重新创建文件，如果下一个仍用上一个文�
 | 4k | 4 | 56.6MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=4G --bs=4k --iodepth=4; |
 | 4k | 8 | 56.7MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=8; |
 | 4k | 16 | 55.9MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=16; |
+| 4k | 32 | 56.9MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=32; |
+| 4k | 512 | 62.7MB/s | rm -f w.0.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=7G --bs=4k --iodepth=512; |
+
+1. 在我的机器上，iodepth到了4，基本就是libaio就到了最大速度
+2. 和OS page cache（engine=sync with direct = 0）相比，速度差的很远。说明libaio对于buffer的优化不如OS
+
+### 附二：block size = 4k, multi thread and sequential but multi files
+
+| bs | threads | Tp | fio command |
+| -- | -- | -- | -- |
+| 4k | 1 | 51.7MB/s | rm -f w.?.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --bs=4k --iodepth=4 --size=2G --numjobs=1 --thread --group_reporting; |
+| 4k | 2 | 52.7MB/s | rm -f w.?.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --bs=4k --iodepth=4 --size=2G --numjobs=2 --thread --group_reporting; |
+| 4k | 4 | 50.2MB/s | rm -f w.?.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --bs=4k --iodepth=4 --size=2G --numjobs=4 --thread --group_reporting; |
+| 4k | 8 | 45.5MB/s | rm -f w.?.0; fio --name=w --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --bs=4k --iodepth=4 --size=2G --numjobs=8 --thread --group_reporting; |
+
+1. 可以看到，多线程作用不大。和上面的AIO（见“修正的测试”）达到最高速相比较，block size才是关键。
 
 # Write mix with Read 
 
