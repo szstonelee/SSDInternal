@@ -2,7 +2,7 @@
 
 [在网上看到一个程序员的作品](https://zhuanlan.zhihu.com/p/178670421)
 
-在其github里有用C++写了一个程序测试SSD的throughput，觉得很好，拿来测试一下。
+在[其github](https://github.com/neoremind/io_benchmark)里有用C++写了一个程序测试SSD的throughput，觉得很好，拿来测试一下。
 
 # 我的微调
 
