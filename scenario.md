@@ -187,6 +187,8 @@ sync很好理解。如果direct = 0，表示用到OS page cache。如果direct =
 
 AIO是Linux基于底层IO系统的async IO。比较有趣的是，Linux在block driver这一层，实际上是不支持async的，即AIO实际是在底层的非异步系统上包装了一层，以提供应用程序的异步接口。尽管AIO的部分组件已经是kernal的一部分，但逻辑理解上，你可以将AIO当做应用层上的事情，即Linux kernal IO是不支持异步模式的。Windows有不同，因为Windows有IO Completed这个接口，实现了真正的基于kernal的异步模式。但可惜的是，在服务器领域，Windows已经出局了。
 
+NOTE: 最近Linux的io_uring，接近Windows的IO Complete。
+
 当使用AIO时，必须将direct设置为1，即不允许使用page cache。[参考这里](https://fio.readthedocs.io/en/latest/fio_man.html#i-o-engine)
 
 为什么？因为如果所读的页基于OS cache，那么它随时有可能被OS evict，i.e., 对任何一application，OS不保证上一指令已经读到的页在下一个指令还存在于内存，这将使异步无法建造或失去意义。因为我们用异步的目的，就是为了当时调用时工作线程calling后不用去阻塞block，可以去做其他工作，之后某个合适的时刻（比如 poll or epoll）在后面某个异步的event事件里能得到基于内存的保证实时操作的性能，i.e. non-blocking。所以，你可以理解AIO使用了自己特定的一套IO buffer管理和线程同步模式。这就好比MySQL和PostgreSQL对于buffer的管理理念不一样，MySQL尽可能用自己的buffer管理IO，而PostgreSQL则相信OS page cache。
@@ -202,6 +204,8 @@ flush表示的是，IO数据，从应用层到了kernal层，i.e., OS page cache
 而sync，表示的是数据100%落到了磁盘上，i.e., disk给了response，拍胸脯保证刚才要写的数据安全入盘了（但disk可能配置错误导致失败，比如：RAID卡中设置了write cache，或者硬件出问题，比如Disk Controller卡上的电池没电）。
 
 为了准确，我们尽可能用sync这个概念，少用flush这个词。在Linux API里，可以找到sync()和write()，但没有flush()。有fflush()，但那其实是write()。
+
+或者用：flush to OS, sync to disk (or sync only)，会更准确些。
 
 # 纯read
 
