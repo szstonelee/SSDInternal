@@ -467,7 +467,7 @@ NOTE: loop测试写前，重新创建文件(所以下面用rm命令)。如果下
 | 32 | 32 | 1376MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=32 --numjobs=32 --thread --group_reporting |
 | 64 | 1 | 2340MB/s | fio --name=w --filename=wfile --rw=write --ioengine=libaio --direct=1 --end_fsync=1 --fsync=0 --size=15G --io_size=10G --bs=1024k --iodepth=1 --numjobs=64 --thread --group_reporting |
 
-以上数据惊人，throughput甚至达到了GB/s级别，而且全部和thread数量增加相关。有个怀疑是：其实多线程写，是多线程操作SSD内部的SDRAM，即第一个线程顺序写文件，留下了很多cache在SSD内部的SDRAM里，后面的线程利用了这个cache，虽然还需要再写一遍，但由于是同一文件同一位置，所以速度可以大大提高（甚至可以优化成零写，比如让SSD内部的两个逻辑地址LBA指向同一物理page）。
+以上数据惊人，throughput甚至达到了GB/s级别，而且全部和thread数量增加相关。有个怀疑是：其实多线程写，是多线程操作SSD内部的SDRAM，即第一个线程顺序写文件，留下了很多cache在SSD内部的SDRAM里，后面的线程利用了这个cache，虽然还需要再写一遍，但由于是同一文件同一位置，SSD内部（或者SSD block driver in OS）可以让多次写，合并成一次写，从而导致throughput并不是SSD真实的物理速度。
 
 ### 修正的测试
 

@@ -35,7 +35,7 @@ sudo ./a.out
 
 测试五次(每次测试前都删除目录中的data文件，rm data*)，然后下表列出每次测试的值
 
-| thread count | no of test | throughtput | total time(us) | thread elapse time(us) |
+| thread count | No. of test | throughtput | total time(us) | thread elapse time(us) |
 | -- | -- | -- | -- | -- |
 | 1 | 1 | 178 MB/s | 91790488 | 0 |
 |   | 2 | 176 MB/s | 92874571 | 0 |
