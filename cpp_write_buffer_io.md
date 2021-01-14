@@ -29,7 +29,7 @@ sudo mkdir -p \tmp\iotest
 sudo ./a.out
 ```
 
-# 测试数据
+# 我的Mac上的SSD测试数据
 
 修改源代码里的kConcurrency参数，得到不同thread数目下的write buffered sequential throughtput
 
@@ -54,6 +54,8 @@ sudo ./a.out
 |   | 5 | 179 MB/s | 91300013 | 1262070 |
 
 # 分析
+
+[可以对比一下之前我用fio测试的数据](scenario.md)
 
 1. 和fio相比，throughput要略弱，但一个数量级。
 
