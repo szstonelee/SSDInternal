@@ -8,7 +8,7 @@
 
 参考：[bufferio_w.cpp](bufferio_w.cpp)
 
-1. 原来每个线程是顺序写入一个文件，data<i>，4G大小一个。每次写4K，都是字符a
+1. 原来每个线程是顺序写入一个文件，data_index，4G大小一个。每次写4K，都是字符a
 
 为了防止写入数据熵一样，我修改了一下，加了一个init_data_random_char()函数，让data[]里的字符随机，这样避免SSD内部压缩算法的影响。
 
