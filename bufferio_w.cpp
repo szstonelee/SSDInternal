@@ -11,14 +11,15 @@
 #include <string.h>
 
 #define WRITE_ONCE_BYTE_SIZE 4096
+
 constexpr int kBlockNum = 100000;   // 尽量大点，让data达到几百兆或更高(但同时保证测试机器os page cache占主要内存)，避免SSD内部的优化算法的干扰
+constexpr int kConcurrency = 4;
+constexpr uint64_t kWriteCountPerThread = 4 / kConcurrency * 1000 * 1000;  // 1 thread 16G, 2 threads 8G each, 4 threads 4G each
+constexpr uint64_t kWriteBytesPerThread = WRITE_ONCE_BYTE_SIZE * kWriteCountPerThread;
+constexpr uint64_t kTotalWriteBytes = kWriteBytesPerThread * kConcurrency;
 
 static char data[WRITE_ONCE_BYTE_SIZE*kBlockNum] __attribute__((aligned(WRITE_ONCE_BYTE_SIZE))) = {'a'};
-constexpr int kConcurrency = 4;
-std::chrono::steady_clock::time_point ends[kConcurrency];
-static const uint64_t kWriteCountPerThread = 4 / kConcurrency * 1000 * 1000;  // 1 thread 16G, 2 threads 8G each, 4 threads 4G each
-static const uint64_t kWriteBytesPerThread = WRITE_ONCE_BYTE_SIZE * kWriteCountPerThread;
-static const uint64_t kTotalWriteBytes = kWriteBytesPerThread * kConcurrency;
+static std::chrono::steady_clock::time_point ends[kConcurrency];
 
 void writer(const int index) {
   const std::string fname = "/tmp/iotest/data" + std::to_string(index);
