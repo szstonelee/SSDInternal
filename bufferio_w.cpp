@@ -89,7 +89,7 @@ int64_t max_us() {
 }
 
 int main() {
-  srand( (unsigned) time(NULL) * getpid());
+  srand( (unsigned) time(nullptr) * getpid());
   init_data_random_char();
 
   const auto start = std::chrono::steady_clock::now();
