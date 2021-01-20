@@ -94,7 +94,13 @@ assert(ret == 0);
 
 从下面的执行效果看，direct是最不稳定，有时比buffered no read好，有时却和buffered with read一样坏。
 
-我甚至写了test_iow_by_direct.cpp去尝试发觉是否会出现read在blktrace里，或者是否会出现写错整个page的现象，仍然无结果，即没有read在blktrace里，也没有写错文件。
+我甚至写了test_iow_by_direct.cpp去尝试发觉：
+
+1. 是否会出现read在blktrace里
+
+2. 或者是否会出现写错整个page的现象（因为我用512字节'b'去写4096字节的文件，如果没有read以及相应的overwrite，那么文件的尾部就不会全是字符’a‘）
+
+仍然无结果：既没有read在blktrace里，也没有写错文件。这也是我上面可能的猜测的原因。
 
 ## 测试结果
 
