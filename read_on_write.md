@@ -103,7 +103,7 @@ NOTE: 测试执行需要```sudo ./a.out```，因为要清除page cache，需要s
 编译执行
 ```
 g++ -std=c++17 read_on_write.cpp
-sudo a./out 1 (or 2 or 3)
+sudo ./a.out 1 (or 2 or 3)
 ```
 
 | 测试模式 | 测试编号 | 结果(ms) |
