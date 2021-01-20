@@ -1,12 +1,14 @@
-# 参考
+# read on write和更多的深挖
+
+# 参考知乎一文章
 
 知乎里一篇关于磁盘写的文章，["read-on-write" in InnoDB](https://zhuanlan.zhihu.com/p/61002228)。
 
 文章内容很深，机理描述如下：
 
-如果向一个磁盘每次写512字节（可以理解sector单位，如果是HHD的话，但文中所用磁盘是SSD），但连续写。由于磁盘最小的单位是page，一般是4096字节，因此对于每个page的第一个写，在内部磁盘IO时，会导致出现一个读。为了减少这个读，优化的程序在每8个写的第一个写时，i.e., 相应每个page的第一个写，用了4096个字节而不是512字节，因此减少了这个读，从而提高了40%的性能。
+如果向一个磁盘每次写512字节（可以理解sector单位，如果是HHD的话，但文中所用磁盘是SSD），但连续写。由于磁盘最小的单位是page，一般是4096字节，因此对于每个page的第一个写，在内部磁盘IO时，会导致出现一个读。为了减少这个读，优化的程序在每8个写的第一个写时，用了4096个字节而不是512字节，因此减少了这个读，从而提高了40%的性能。
 
-t.cc是没有用优化的code，因此可以在iostat里发现有读，同时用blktrace也可以看到这样的读
+t.cc是没有用优化的code，因此可以在iostat里发现有读，同时用blktrace也可以看到这样的读证明
 ```
  259,6    0      184     0.001777196 58995  A   R 55314456 + 8 <- (259,9) 55312408
  259,9    0      185     0.001777463 58995  Q   R 55314456 + 8 [a.out]
@@ -65,7 +67,7 @@ assert(ret == 0);
 
 为什么？
 
-我认为Linux是个足够聪明的文件系统，当用上面的代码产生文件时，虽然文件的meta data写明这是个500M大小的文件，也分配（或预留）里磁盘空间给文件，比如几个extent和block，但这几个extent和block是否被写过(或者被初始化过，因为ext4可以delay文件相应的extent和block的初始化)，Linux是知道的。所以，当overwrite时，Linux就知道这是overwrite，还是new write。
+我认为Linux是个足够聪明的文件系统，当用上面的代码产生文件时，虽然文件的meta data写明这是个500M大小的文件，也分配（或预留）了磁盘空间给文件，比如几个extent和block，但这几个extent和block是否被写过(或者被初始化过，因为ext4可以delay文件相应的extent和block的初始化)，Linux是知道的。所以，当程序发出overwrite指令时，Linux内部是可以知道这是overwrite，还是new write。
 
 所以，我最后的修订是：在check_file_before_write()里实际写入。由于block size是1M，而且不是每次sync，所以写入是很快的。
 
@@ -91,7 +93,11 @@ assert(ret == 0);
 
 从下面的执行效果看，direct是最不稳定，有时比buffered no read好，有时却和buffered with read一样坏。
 
+我甚至写了test_iow_by_direct.cpp去尝试发觉是否会出现read在blktrace里，或者是否会出现写错整个page的现象，仍然无结果，即没有read在blktrace里，也没有写错文件。
+
 ## 测试结果
+
+NOTE: 测试执行需要```sudo ./a.out```，因为要清除page cache，需要sudo权限
 
 | 测试模式 | 测试编号 | 结果(ms) |
 | -- | -- | -- |
