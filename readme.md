@@ -4,3 +4,4 @@
 
 [C++ code to test write sequential buffered IO performance](cpp_write_buffer_io.md)
 
+[read on write and more](read_on_write.md)
