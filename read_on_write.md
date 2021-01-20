@@ -43,7 +43,7 @@ blktrace -d /dev/vda -o - | blkparse -i -
 
 所以，测试时，必须有旧文件，同时必须清除page cache，否则你观测不到想要的结果。
 
-同时，OS对于读有很多优化，比如预读read ahead，就是读的指令不要只读当前的page，可以连续读一批page，因为消耗差不多，这对于HDD非常有效（对SSD其实也是有效的）。这个参数在OS里的配置叫read_ahead_kb。
+同时，OS对于读有很多优化，比如预读read ahead，就是读的指令不会只读当前的page，可以连续读一批page，因为消耗差不多，这对于HDD非常有效（对SSD其实也是有效的）。这个参数在OS里的配置叫read_ahead_kb。
 
 为了观测准确，我们需要关闭这个优化。
 
@@ -51,8 +51,9 @@ blktrace -d /dev/vda -o - | blkparse -i -
 
 ## 首次创建的文件必须真实写过东西
 
-再发现必须有旧文件时，我写了下面这些code去第一次创建文件
+发现必须有旧文件时，我最开始是写了下面这些code去做修正
 ```
+// 如果测试文件找不到的话，需要第一次创建文件
 ret = fseek(fp, file_size - 1, SEEK_SET);   // file_size是要测试的文件大小，原文是1G，我的测试程序里是500M
 assert(ret == 0);
 ret = fwrite("", 1, sizeof(char), fp);
@@ -69,7 +70,7 @@ assert(ret == 0);
 
 我认为Linux是个足够聪明的文件系统，当用上面的代码产生文件时，虽然文件的meta data写明这是个500M大小的文件，也分配（或预留）了磁盘空间给文件，比如几个extent和block，但这几个extent和block是否被写过(或者被初始化过，因为ext4可以delay文件相应的extent和block的初始化)，Linux是知道的。所以，当程序发出overwrite指令时，Linux内部是可以知道这是overwrite，还是new write。
 
-所以，我最后的修订是：在check_file_before_write()里实际写入。由于block size是1M，而且不是每次sync，所以写入是很快的。
+所以，我最后的修订是：在check_file_before_write()里实际写入（有fwrite）。由于block size是1M，而且不是每次sync，所以写入是很快的。
 
 ## 测试文件的大小
 
@@ -77,7 +78,7 @@ assert(ret == 0);
 
 为什么会这样？
 
-在前面我们说过，OS有read ahead的优化，但其实，在SSD内部，一样有read ahead，即你读某个page，在SSD内部，也是连续读出几个（或几十个, who knows）page，因为消耗是差不多的，并且缓存在SSD内部的SDRAM里，这样如果下次读cache hit，就非常快。 所以，真正耗时的每次基于NAND的实际read，要少很多。
+在前面我们说过，OS有read ahead的优化，但其实，在SSD内部，一样有read ahead，即你读某个page，在SSD内部，也是连续读出几个page（或几十个, who knows），因为消耗是差不多的，并且缓存在SSD内部的SDRAM里，这样如果下次读cache hit，就非常快，因为从SSD内部的RAM走，而不是缓慢的NAND物理介质。 所以，真正耗时的每次基于NAND的实际read，要少很多。
 
 这样，如果测试文件过小，这样的效果不明显。只有放大测试文件，让这样的实际read有一定量，才能显示优化的效果。
 
