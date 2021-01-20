@@ -17,11 +17,11 @@ t.cc是没有用优化的code，因此可以在iostat里发现有读，同时用
 
 而t2.cc是优化的版本，不管是iostat，还是blktrace，都看不到这样的读迹象。
 
-blktrace的命令如下
-
+blktrace的命令如下: 
 ```
 blktrace -d /dev/vda -o - | blkparse -i -
 ```
+NOTE: 你需要用你自己的device，我的是vda，你自己的，请用```ls /dev```进行检查
 
 # 我的实验
 
