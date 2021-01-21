@@ -27,7 +27,7 @@ NOTE: 你需要用你自己的device，我的是vda，你自己的，请用```ls
 
 我对照写了几个程序，去印证这个事，test_row.cc是完全copy原来的程序t.cc，为了证明我的机器也是如此的表现。而且确实也如此。
 
-然后，我写了read_on_write.cpp，去进一步优化代码和深挖一些东西，发现了一些有趣的东西。
+然后，我写了[read_on_write.cpp](read_on_write.cpp)，去进一步优化代码和深挖一些东西，发现了一些有趣的东西。
 
 ## 原来的文件必须存在
 
@@ -94,7 +94,7 @@ assert(ret == 0);
 
 从下面的执行效果看，direct是最不稳定，有时比buffered no read好，有时却和buffered with read一样坏。
 
-我甚至写了test_iow_by_direct.cpp去尝试发觉：
+我甚至写了[test_iow_by_direct.cpp](test_iow_by_direct.cpp)去尝试发觉：
 
 1. 是否会出现read在blktrace里
 
