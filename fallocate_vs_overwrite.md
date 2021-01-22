@@ -19,7 +19,7 @@
 
 5. 用一个旧文件，但同时也调用fallocate(FALLOC_FL_ZERO_RANGE)，然后4K的write()+sync()
 
-前面三种，作者称之为append模式，后面两种则是overwrite模式。然后作者比较了其中三种结果（具体是对应哪三种，我不得而知），所以我写了程序去验证一下。
+前面三种，作者称之为append模式，后面两种则是overwrite模式（也可能旧文件+fallocate也是append模式，从后面的测试结果看，很像！）。然后作者比较了其中三种结果（具体是对应哪三种，我不得而知），所以我写了程序去验证一下。
 
 请参考代码：[fallocate_append_write_and_overwrite.cpp](fallocate_append_write_and_overwrite.cpp)
 

@@ -144,22 +144,22 @@ int main()
 
   auto buf = std::unique_ptr<unsigned char, void(*)(void*)>(prep_buf(kBlockSize, kBlockSize), free);
 
-  constexpr char file1[] = "/tmp/t1";
-  buffer_append(kFileSize, kBlockSize, file1, buf.get());  
+  constexpr char file3[] = "/tmp/t3";
+  fallocate_append_mode(FallocateMode::kFillZero, kFileSize, kBlockSize, file3, buf.get());
   std::this_thread::sleep_for(500ms);
 
   constexpr char file2[] = "/tmp/t2";
   fallocate_append_mode(FallocateMode::kNoFill, kFileSize, kBlockSize, file2, buf.get());
   std::this_thread::sleep_for(500ms);
 
-  constexpr char file3[] = "/tmp/t3";
-  fallocate_append_mode(FallocateMode::kFillZero, kFileSize, kBlockSize, file3, buf.get());
-  std::this_thread::sleep_for(500ms);
-
-  overwrite(true, kFileSize, kBlockSize, file1, buf.get()); // use existing file1 for overwrite with fallocate
+  constexpr char file1[] = "/tmp/t1";
+  buffer_append(kFileSize, kBlockSize, file1, buf.get());  
   std::this_thread::sleep_for(500ms);
 
   overwrite(false, kFileSize, kBlockSize, file1, buf.get()); // use existing file1 for overwrite and no fallocate
+  std::this_thread::sleep_for(500ms);
+
+  overwrite(true, kFileSize, kBlockSize, file1, buf.get()); // use existing file1 for overwrite with fallocate
   std::this_thread::sleep_for(500ms);
 
   return 0;
