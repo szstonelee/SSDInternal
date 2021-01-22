@@ -21,6 +21,8 @@
 
 前面三种，作者称之为append模式，后面两种则是overwrite模式。然后作者比较了其中三种结果（具体是对应哪三种，我不得而知），所以我写了程序去验证一下。
 
+请参考代码：[fallocate_append_write_and_overwrite.cpp](fallocate_append_write_and_overwrite.cpp)
+
 # 测试结果
 
 ## 有文件（但新文件也会倍代码用unlink删除）的测试
