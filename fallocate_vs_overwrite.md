@@ -23,7 +23,7 @@
 
 # 测试结果
 
-## 有文件（但新文件也会删除）的测试
+## 有文件（但新文件也会倍代码用unlink删除）的测试
 
 | 测试模式 | 第一次测试(ms) | 第二次测试(ms) | 第三次测试(ms) |
 | -- | -- | -- | -- |
@@ -33,7 +33,7 @@
 | overwrite with fallocate | 166648 | 157356 | 182170 |
 | overwrite without fallocate | 91631 | 80919 | 94356 |
 
-## 每次测试前都会rm所有文件的测试
+## 每次测试前都会手工rm所有文件的测试
 
 | 测试模式 | 第一次测试(ms) | 第二次测试(ms) | 第三次测试(ms) |
 | -- | -- | -- | -- |
@@ -42,3 +42,15 @@
 | new file with fallocate, FillZero | 198008 | 165617 | 206342 |
 | overwrite with fallocate | 147408 | 195468 | 191297 |
 | overwrite without fallocate | 75394 | 117594 | 82227 |
+
+## 改变次序
+
+由于有GC的影响，怀疑第一个任务类型，上面的new file without fallocate，会更快些，所以，调整了次序，再测。
+
+| 测试模式 | 第一次测试(ms) | 第二次测试(ms) | 第三次测试(ms) |
+| -- | -- | -- | -- |
+| new file with fallocate, FillZero  | 158353 | 164308 | 175835 |
+| new file with fallocate, NoneZero | 169505 | 174326 | 151264 |
+| new file without fallocate | 199230 | 167699 | 179450 |
+| overwrite without fallocate | 86065 | 72755 | 83881 |
+| overwrite with fallocate | 175609 | 183144 | 180175 |
