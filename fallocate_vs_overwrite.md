@@ -7,7 +7,7 @@
 
 比如：我们写1G的内容（我的测试里用了500M，为了省时），顺次写，每次写都是4K大小，而且必须每次写完都sync。大家可以想象一下，对于数据库里的WAL文件, Write Ahead Log，就很可能是这样的工作场景。
 
-注意：如果不sync，就是write back模式，这时，[Linux ext4已经支持delay allocation or allocation on flush方式。](https://en.wikipedia.org/wiki/Allocate-on-flush)。所以，如果write-back的下面的performance比较就没有意义。
+注意：如果不sync，就是write back模式，这时，[Linux ext4已经支持delay allocation or allocation on flush方式。](https://en.wikipedia.org/wiki/Allocate-on-flush)如果write-back，下面的performance比较就失去比较条件，i.e., 我们关注的是每次IO都要在meta data里写的代价。
 
 按文中总结，总共有五种可能方式：
 
