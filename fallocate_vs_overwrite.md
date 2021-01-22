@@ -3,11 +3,11 @@
 
 请先参考知乎上的这篇文章[write file faster](https://zhuanlan.zhihu.com/p/61212603)。非常好和深的内容。
 
-其核心点是：当我们写文件时，文件系统filesystem是需要分配空间给我们的写的，有多种方式。然后文中分析那种最快，差别有多大，以及为什么。特别是用blktrace去查看各种模式的实际希尔情况，如：多少是用户进程的写，多少是系统进程的meta data写，dive very deep!
+其核心点是：当我们写文件时，文件系统filesystem是需要分配空间给我们的写的，有多种方式。然后文中分析那种最快，差别有多大，以及为什么。特别是用blktrace去查看各种模式的实际IO情况，如：多少data和meta data是用户进程的写，多少是系统进程的写，dive very deep!
 
-比如：我们写1G的内容（我的测试里用了500M，为了省时），顺次写，每次写都是4K大小，而且必须每次写完都sync。大家可以想象一下，对于数据库里的WAL文件, Write Ahead Log，就很可能是这样的工作场景。
+比如：我们写1G的内容，顺次写，每次写都是4K大小，而且必须每次写完都sync。大家可以想象一下，对于数据库里的WAL文件，Write Ahead Log，有数据不丢失的强要求, 就是这样的工作场景。
 
-注意：如果不sync，就是write back模式，这时，[Linux ext4已经支持delay allocation or allocation on flush方式。](https://en.wikipedia.org/wiki/Allocate-on-flush)如果write-back，下面的performance比较就失去比较条件，i.e., 我们关注的是每次IO都要在meta data里写的代价。
+注意：如果不sync，就是write back模式，[Linux ext4已经支持delay allocation or allocation on flush方式。](https://en.wikipedia.org/wiki/Allocate-on-flush)如果write-back，下面的performance比较就失去前提条件，i.e., 我们关注的是每次IO都要在meta data里写的代价。
 
 按文中总结，总共有五种可能方式：
 
@@ -28,6 +28,8 @@
 里面有五种模式，然后输出执行的时间。大家可以参考下面的报表。
 
 # 测试结果
+
+我的测试里用了500M，为了省时。
 
 ## 有文件（但新文件也会在代码里用unlink删除）的测试
 
