@@ -45,7 +45,7 @@
 
 ## 改变次序
 
-由于有GC的影响，怀疑第一个任务类型，上面的new file without fallocate，会更快些，所以，调整了次序，再测。
+由于怀疑SSD有GC的影响，怀疑第一个任务类型，即上面的new file without fallocate，可能会更快些，所以，调整了次序，再测。
 
 | 测试模式 | 第一次测试(ms) | 第二次测试(ms) | 第三次测试(ms) |
 | -- | -- | -- | -- |
@@ -54,3 +54,11 @@
 | new file without fallocate | 199230 | 167699 | 179450 |
 | overwrite without fallocate | 86065 | 72755 | 83881 |
 | overwrite with fallocate | 175609 | 183144 | 180175 |
+
+## 结论
+
+1. 最明显的是overwrite without fallocate，是其他模式的一半或接近一半。所以，没有分配和fill zero这些meta data的消耗，是提升性能最大的关键。
+
+2. 其他四种模式之间基本在一个量级，而且各个测试显示数据有飘忽，有时这个好，有时那个妙。i.e., 有meta data的负担都会影响性能，哪个影响更大，不定，或不稳。
+
+3. SSD的GC可能会影响结果，从上面看，如果是第一个执行动作，数据稍微好些，但不代表所有的数据都好，只是总体感觉稍好。也许是GC的原因，也许是其他，不知。
