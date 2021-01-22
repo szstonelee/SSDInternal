@@ -23,6 +23,8 @@
 
 # 测试结果
 
+## 有文件（但新文件也会删除）的测试
+
 | 测试模式 | 第一次测试(ms) | 第二次测试(ms) | 第三次测试(ms) |
 | -- | -- | -- | -- |
 | new file without fallocate | 164259 | 164290 | 158285 |
@@ -30,3 +32,13 @@
 | new file with fallocate, FillZero | 183079 | 165731 | 185302 |
 | overwrite with fallocate | 166648 | 157356 | 182170 |
 | overwrite without fallocate | 91631 | 80919 | 94356 |
+
+## 每次测试前都会rm所有文件的测试
+
+| 测试模式 | 第一次测试(ms) | 第二次测试(ms) | 第三次测试(ms) |
+| -- | -- | -- | -- |
+| new file without fallocate | 173577 | 170137 | 179816 |
+| new file with fallocate, NoneZero | 193260 | 187639 | 169492 |
+| new file with fallocate, FillZero | 198008 | 165617 | 206342 |
+| overwrite with fallocate | 147408 | 195468 | 191297 |
+| overwrite without fallocate | 75394 | 117594 | 82227 |
