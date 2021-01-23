@@ -143,7 +143,7 @@ int main()
   constexpr std::size_t kFileSize = 500 << 20;  // 500M
 
   // auto buf = std::unique_ptr<unsigned char, void(*)(void*)>(prep_buf(kBlockSize, kBlockSize), free);
-  auto aligned_buf = new(std::align_val_t{kBlockSize}) unsigned char[kBlockSize];
+  auto* aligned_buf = new(std::align_val_t{kBlockSize}) unsigned char[kBlockSize];
   assert(aligned_buf != nullptr);
   std::unique_ptr<unsigned char[]> buf(aligned_buf); 
 
