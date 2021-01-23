@@ -68,7 +68,7 @@ assert(ret == 0);
 
 为什么？
 
-我认为Linux是个足够聪明的文件系统，当用上面的代码产生文件时，虽然文件的meta data写明这是个500M大小的文件，也分配（或预留）了磁盘空间给文件，比如几个extent和block，但这几个extent和block是否被写过(或者被初始化过，因为ext4可以delay文件相应的extent和block的初始化)，Linux是知道的。所以，当程序发出overwrite指令时，Linux内部是可以知道这是overwrite，还是new write。
+我认为Linux有个足够聪明的文件系统ext4，当用上面的代码产生文件时，虽然文件的meta data写明这是个500M大小的文件，也预留了磁盘空间给文件（这个可以在内存里做，甚至不用写文件系统的meta data），也写了最后的一字节，但实际的extent是可以延迟分配的，所以，当程序发出overwrite指令时，Linux内部是可以知道这是overwrite，还是new write。
 
 所以，我最后的修订是：在check_file_before_write()里实际写入（有fwrite）。由于block size是1M，而且不是每次sync，所以写入是很快的。
 
