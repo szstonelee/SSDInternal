@@ -142,7 +142,10 @@ int main()
   constexpr std::size_t kBlockSize = 4 << 10;   // 4K
   constexpr std::size_t kFileSize = 500 << 20;  // 500M
 
-  auto buf = std::unique_ptr<unsigned char, void(*)(void*)>(prep_buf(kBlockSize, kBlockSize), free);
+  // auto buf = std::unique_ptr<unsigned char, void(*)(void*)>(prep_buf(kBlockSize, kBlockSize), free);
+  auto aligned_buf = new(std::align_val_t{kBlockSize}) unsigned char[kBlockSize];
+  assert(aligned_buf != nullptr);
+  std::unique_ptr<unsigned char[]> buf(aligned_buf); 
 
   constexpr char file3[] = "/tmp/t3";
   fallocate_append_mode(FallocateMode::kFillZero, kFileSize, kBlockSize, file3, buf.get());
