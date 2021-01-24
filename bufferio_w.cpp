@@ -18,13 +18,15 @@ constexpr uint64_t kWriteCountPerThread = 4 / kConcurrency * 1000 * 1000;  // 1 
 constexpr uint64_t kWriteBytesPerThread = WRITE_ONCE_BYTE_SIZE * kWriteCountPerThread;
 constexpr uint64_t kTotalWriteBytes = kWriteBytesPerThread * kConcurrency;
 
-static char data[WRITE_ONCE_BYTE_SIZE*kBlockNum] __attribute__((aligned(WRITE_ONCE_BYTE_SIZE))) = {'a'};
+// static char data[WRITE_ONCE_BYTE_SIZE*kBlockNum] __attribute__((aligned(WRITE_ONCE_BYTE_SIZE))) = {'a'};
+alignas(WRITE_ONCE_BYTE_SIZE) static char data[WRITE_ONCE_BYTE_SIZE*kBlockNum] = {'a'};
 static std::chrono::steady_clock::time_point ends[kConcurrency];
 
 void writer(const int index) {
   const std::string fname = "/tmp/iotest/data" + std::to_string(index);
 
-  const int fd = ::open(fname.c_str(), O_NOATIME | O_RDWR | O_CREAT, 0644);
+  constexpr mode_t kMode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;  // 0644
+  const int fd = ::open(fname.c_str(), O_NOATIME | O_RDWR | O_CREAT, kMode);
   if (fd == -1) {
     std::cout << "open() failed because " << strerror(errno) << '\n';
     exit(1);

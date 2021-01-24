@@ -25,7 +25,7 @@ g++ -std=c++17 bufferio_w.cpp -pthread -O2
 
 运行
 ```
-sudo mkdir -p \tmp\iotest
+sudo mkdir -p /tmp/iotest
 sudo ./a.out
 ```
 

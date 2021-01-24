@@ -580,3 +580,9 @@ for i in {1..10}; do fio --name=r --filename=total --ioengine=sync --rw=randread
 
 真正对于写的优化是：log写有两个，一个是注入ingest写，一个是background compaction的写。如何分配并发，同时如何降低write amplification，才是写优化的两个关键。
 
+# 附录
+
+网上一个很好的案例，不一定NVMe的新的SSD就快，可能慢于老的SATA，请参考：[知乎《从共识算法开谈 - 硬盘性能的最大几个误解》](https://zhuanlan.zhihu.com/p/55658164).
+
+这里面一个很好的案例就是：对于大的block size（8M）的fsync写，老的SATA SSD的thoughput是740MB/s，而新的NVMe SSD的throughput只有170MB/s。
+
