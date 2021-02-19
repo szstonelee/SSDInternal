@@ -1,5 +1,7 @@
 SSD性能初探 By dd and fio
 
+这是个简单的初步，更深的内容请参考[scenario.md](scenario.md)
+
 # SSD性能是个迷
 
 我曾经做过一个项目，使用SSD做内存的辅助，提升一个Cache系统的性价比。我浏览网上一些讯息，看上去，SSD的性能是十分惊人的。比如Throughput，一个普通的NVMe的SSD，动不动就几千兆Byte/s，少则也有500MB/s。而IOPS，也是几百k/s的级别。
