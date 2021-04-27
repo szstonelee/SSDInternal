@@ -159,13 +159,15 @@ fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --
 ```
 fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0
 ```
-这是因为还有一个参数invalidate，这个参数是每次读前，将对应的cache先清除，所以，就和direct=1一样了
+这是因为还有一个参数invalidate，这个参数是每次读前，将对应的cache无效，所以，就和direct=1一样了
+
+注：invalidate缺省值是true，即每次发IO前page cache都是无效的，也就是我们根本不使用page cacche或者buffer，每次IO都肯定会用到磁盘，而不是内存。但是注意：磁盘内部，特别是SSD，内部也是有内存的，所以很多时候，你发现读自磁盘的速度和内存几乎一样快。
 
 如果我们增加设置invaliddate，如下
 ```
 fio --name=test --filename=tfile --rw=randread --io_size=200M --ioengine=sync --bs=4k --direct=0 --invalidate=0
 ```
-就会发现throughput=2GB/s左右。这是因为基本都是从内存读到数据（我们之前有做热身）
+就会发现throughput=3GB/s左右。这是因为基本都是从内存读到数据（我们之前有做热身）
 
 上面那个page cache能有效，是因为randread两次执行的随机数时一样的，如果我们设置不同的随机数，i.e., --randrepeat=0，我们会发现page cache的作用没了（或准确地说，作用变小了，因为读的是200M，文件tfile超过2G，随机读到同一page的机会不大）
 ```
